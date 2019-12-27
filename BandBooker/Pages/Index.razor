@@ -25,9 +25,16 @@
 
 </select>
 <br />
+<button disabled="@disableInstrumentList" @onclick="NewInstrumentClicked">New</button>
+<button disabled="@disableEditInstrument" @onclick="EditInstrumentClicked">Edit</button>
+<button disabled="@disableEditInstrument" @onclick="DeleteInstrumentClicked">Delete</button>
+<br />
+<span style="color:red">@instrumentErrorMessage</span>
 
 @code {
     private bool disableInstrumentList = false;
+    private bool disableEditInstrument = true;
+    private string instrumentErrorMessage;
     private Instrument selectedInstrument;
     private List<Instrument> allInstruments = new List<Instrument>();
 
@@ -42,6 +49,26 @@
         {
             selectedInstrument = allInstruments.Where(inst => inst.InstrumentId == instrumentId).FirstOrDefault();
             string instrumentName = selectedInstrument?.Name;
+            disableEditInstrument = false;
         }
+        else
+        {
+            disableEditInstrument = true;
+        }
+    }
+
+    private void NewInstrumentClicked()
+    {
+
+    }
+
+    private void EditInstrumentClicked()
+    {
+
+    }
+
+    private void DeleteInstrumentClicked()
+    {
+
     }
 }
