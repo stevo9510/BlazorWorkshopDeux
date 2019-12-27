@@ -69,6 +69,14 @@
 
     private void DeleteInstrumentClicked()
     {
-
+        if(selectedInstrument != null)
+        {
+            instrumentErrorMessage = DataManager.DeleteInstrument(selectedInstrument);
+            if (string.IsNullOrWhiteSpace(instrumentErrorMessage))
+            {
+                allInstruments.Remove(selectedInstrument);
+                selectedInstrument = allInstruments.FirstOrDefault();
+            }
+        }
     }
 }
