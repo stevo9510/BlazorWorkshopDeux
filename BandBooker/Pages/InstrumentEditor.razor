@@ -1,0 +1,16 @@
+﻿@inherits InstrumentEditorCode
+@if(showInstrumentPanel)
+{
+    <div style="background-color:lightgray;padding:1vw;">
+        <EditForm Model="@Instrument" OnValidSubmit="@SubmitButtonClicked">
+            <DataAnnotationsValidator/>
+            <ValidationSummary/>
+            Name: <InstantInputText @bind-Value="@Instrument.Name" style="width:100%" type="text" />
+            <br />
+            <br />
+            <button type="submit">@submitButtonText</button>
+            <span>&nbsp;</span>
+            <button type="button" @onclick="CancelButtonClicked">Cancel</button>
+        </EditForm>
+    </div>
+}
