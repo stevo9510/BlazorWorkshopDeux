@@ -1,0 +1,295 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@using Data
+@using BandBookerData.Models
+@using System.IO;
+@using Blazor.FileReader;
+@inject IFileReaderService fileReaderService;
+@inject IJSRuntime js;
+
+
+@if (@Musician != null && @ShowMusicianPanel == true)
+{
+    <div style="background-color:lightgray;">
+        <div style="padding:1vw;">
+            <EditForm Model="@Musician" OnValidSubmit="@SubmitButtonPressed">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                Name:
+                <InstantInputText @bind-Value="@Musician.Name"
+                                                   id="musician.name"
+                                                   type="text" style="width:100%;" />
+                <br /><br />
+                Email:
+                <InstantInputText @bind-Value="@Musician.Email"
+                                                   type="text" style="width:100%;" />
+                <br /><br />
+                Mobile Phone:
+                <InstantInputText @bind-Value="@Musician.MobilePhone"
+                                                   type="text" style="width:100%;" />
+                <br /><br />
+                Bio:
+                <textarea id="BioControl" @bind="@Musician.Bio"
+                                       rows="4"
+                                       style="width: 100%; overflow: hidden;
+                    overflow-wrap: break-word;
+                    overflow-y: scroll; " />
+                <br />
+                <table style="width:100%">
+                    <tr>
+                        <td style="width:45%;" valign="top">
+                            All Instruments:<br />
+                        </td>
+                        <td style="width:10%;" valign="top">
+                            <span>&nbsp;</span>
+                        </td>
+                        <td style="width:45%;" valign="top">
+                            @if (Musician.Name != null && Musician.Name != "")
+                            {
+                                <span>@Musician.Name's Instruments:</span>
+                            }
+                            else
+                            {
+                                <span>Musician's Instruments:</span>
+                            }
+                            <br />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:45%;" valign="top">
+                            <select @onchange="InstrumentSelectedFromMaster"
+                                                      size="10" style="width:100%;">
+                                @foreach (var instrument in AllInstruments)
+                                {
+                                    @if ((from x in Musician.MusicianInstrument
+                                         where x.Instrument.Name == instrument.Name
+                                         select x).FirstOrDefault() == null)
+                                    {
+                                        <option value="@instrument.InstrumentId.ToString()">
+                                            @instrument.Name
+                                        </option>
+                                    }
+                                }
+                            </select>
+                        </td>
+                        <td style="width:10%;" valign="top">
+                            <button @onclick="AddSelectedInstrument"
+                                                      type="button"
+                                                      disabled="@AddSelectedInstrumentButtonDisabled"
+                                                      style="width:100%;">
+                                &gt;
+                            </button><br />
+                            <button @onclick="@AddAllInstruments"
+                                                      type="button"
+                                                      style="width:100%;">
+                                &gt;&gt;
+                            </button><br />
+                            <button @onclick="@RemoveSelectedInstrument"
+                                                      type="button"
+                                                      disabled="@RemoveSelectedInstrumentButtonDisabled"
+                                                      style="width:100%;">
+                                &lt;
+                            </button><br />
+                            <button @onclick="@RemoveAllInstruments"
+                                                      type="button"
+                                                      style="width:100%;">
+                                &lt;&lt;
+                            </button><br />
+                        </td>
+                        <td style="width:45%;" valign="top">
+                            <select @onchange="InstrumentSelectedFromMusician"
+                                                      size="10" style="width:100%;">
+                                @foreach (var mi in Musician.MusicianInstrument)
+                                {
+                                    <option value="@mi.Instrument.InstrumentId.ToString()">
+                                        @mi.Instrument.Name
+                                    </option>
+                                }
+                            </select>
+
+
+                        </td>
+                    </tr>
+                </table>
+                <br />
+                Photo:
+                <br />
+                <input type="file" @ref=inputTypeFileElement />
+                <button type="button" @onclick=ReadFile>Upload</button>
+                <br />
+                @if (@Musician.PhotoUrl != "")
+                {
+                    <img src="@Musician.PhotoUrl" />
+                }
+                <br /><br />
+                <button type="submit">@SubmitButtonText</button>
+                <span>&nbsp;</span>
+                <button type="button" @onclick="CancelButtonPressed">Cancel</button>
+            </EditForm>
+
+        </div>
+    </div>
+}
+
+
+@code {
+
+    private List<Instrument> AllInstruments { get; set; }
+
+    [Parameter]
+    public EventCallback<string> CancelPressed { get; set; }
+
+    [Parameter]
+    public EventCallback<Musician> MusicianAdded { get; set; }
+
+    [Parameter]
+    public EventCallback<Musician> MusicianUpdated { get; set; }
+
+    Musician Musician { get; set; } = new Musician();
+    bool ShowMusicianPanel = false;
+    bool AddSelectedInstrumentButtonDisabled = true;
+    bool RemoveSelectedInstrumentButtonDisabled = true;
+    Instrument SelectedInstrument;
+    ElementReference inputTypeFileElement;
+    bool Adding = false;
+    string SubmitButtonText = "";
+
+
+    public void Hide()
+    {
+        ShowMusicianPanel = false;
+    }
+
+    public async Task ReadFile()
+    {
+        string filename = "wwwroot/images/";
+
+        foreach (var file in await fileReaderService.CreateReference(inputTypeFileElement).EnumerateFilesAsync())
+        {
+            // Read into buffer and act (uses less memory)
+            using (Stream stream = await file.OpenReadAsync())
+            {
+                var buffer = new byte[stream.Length];
+                await stream.ReadAsync(buffer, 0, buffer.Length);
+
+                var info = await file.ReadFileInfoAsync();
+                var extension = Path.GetExtension(filename + info.Name);
+                var name = $@"{Guid.NewGuid()}" + extension;
+                filename += name;
+
+                using (Stream outfile = System.IO.File.OpenWrite(filename))
+                {
+                    outfile.Write(buffer, 0, buffer.Length);
+                }
+                ImageResizer.ResizeAndSaveImage(filename, 200);
+                Musician.PhotoUrl = "/images/" + name;
+            }
+        }
+    }
+
+    void AddAllInstruments()
+    {
+        foreach (Instrument instrument in AllInstruments)
+        {
+            if ((from x in Musician.MusicianInstrument
+                 where x.Instrument.Name == instrument.Name
+                 select x).FirstOrDefault() == null)
+            {
+                var mi = new MusicianInstrument()
+                {
+                    Musician = this.Musician,
+                    Instrument = instrument
+                };
+                Musician.MusicianInstrument.Add(mi);
+            }
+        }
+    }
+
+    void RemoveAllInstruments()
+    {
+        foreach (MusicianInstrument mi in Musician.MusicianInstrument.ToArray())
+        {
+            Musician.MusicianInstrument.Remove(mi);
+        }
+    }
+
+    void AddSelectedInstrument()
+    {
+        var mi = new MusicianInstrument()
+        {
+            Musician = this.Musician,
+            Instrument = SelectedInstrument
+        };
+        Musician.MusicianInstrument.Add(mi);
+        AddSelectedInstrumentButtonDisabled = true;
+    }
+
+    void RemoveSelectedInstrument()
+    {
+        var match = (from x in Musician.MusicianInstrument
+                     where x.Instrument.InstrumentId == SelectedInstrument.InstrumentId
+                     select x).FirstOrDefault();
+        if (match != null)
+        {
+            Musician.MusicianInstrument.Remove(match);
+            RemoveSelectedInstrumentButtonDisabled = true;
+        }
+    }
+
+    void InstrumentSelectedFromMusician(ChangeEventArgs args)
+    {
+        SelectedInstrument =
+           (from x in AllInstruments
+            where x.InstrumentId == Convert.ToInt32(args.Value)
+            select x).FirstOrDefault();
+        RemoveSelectedInstrumentButtonDisabled = false;
+        AddSelectedInstrumentButtonDisabled = true;
+    }
+
+    void InstrumentSelectedFromMaster(ChangeEventArgs args)
+    {
+        SelectedInstrument =
+           (from x in AllInstruments
+            where x.InstrumentId == Convert.ToInt32(args.Value)
+            select x).FirstOrDefault();
+        AddSelectedInstrumentButtonDisabled = false;
+        RemoveSelectedInstrumentButtonDisabled = true;
+    }
+
+    public async Task NewMusician(List<Instrument> Instruments)
+    {
+        this.Musician = new Musician();
+        AllInstruments = Instruments;
+        Adding = true;
+        SubmitButtonText = "Add";
+        ShowMusicianPanel = true;
+        await js.InvokeVoidAsync("SetFocus", "musician.name");
+    }
+
+    public async Task EditMusician(List<Instrument> Instruments, Musician Musician)
+    {
+        AllInstruments = Instruments;
+        Adding = false;
+        SubmitButtonText = "Update";
+        this.Musician = Musician;
+        ShowMusicianPanel = true;
+        await js.InvokeVoidAsync("SetFocus", "musician.name");
+    }
+
+    async Task SubmitButtonPressed()
+    {
+        if (Adding)
+        {
+            await MusicianAdded.InvokeAsync(this.Musician);
+        }
+        else
+        {
+            await MusicianUpdated.InvokeAsync(this.Musician);
+        }
+    }
+
+    async Task CancelButtonPressed()
+    {
+        ShowMusicianPanel = false;
+        await CancelPressed.InvokeAsync("");
+    }
+}

@@ -34,7 +34,55 @@
 <InstrumentEditor @ref="instrumentEditor" Instrument="selectedInstrument" AddInstrumentClicked="InstrumentEditor_AddInstrumentClicked"
                   UpdateInstrumentClicked="InstrumentEditor_UpdateInstrumentClicked" CancelClicked="InstrumentEditor_CancelClicked" />
 
+<h2>Musicians</h2>
+<select @onchange="MusicianSelected" size="10" style="width:100%;" disabled="@DisableMusicianControls">
+    @foreach (var musician in DataManager.Musicians)
+    {
+        if (SelectedMusician != null
+         && musician.MusicianId == SelectedMusician.MusicianId)
+        {
+            <option selected value="@musician.MusicianId.ToString()">@musician.Name</option>
+        }
+        else
+        {
+            <option value="@musician.MusicianId.ToString()">@musician.Name</option>
+        }
+    }
+</select>
+<br />
+
+<button disabled="@DisableMusicianControls"
+            @onclick="NewMusicianButtonClick">
+    New
+</button>
+<span>&nbsp;</span>
+
+<button disabled="@DisableMusicianEditButton"
+            @onclick="EditMusicianButtonClick">
+    Edit
+</button>
+<span>&nbsp;</span>
+
+<button disabled="@DisableMusicianEditButton"
+            @onclick="DeleteMusicianButtonClick">
+    Delete
+</button>
+<br />
+
+<span style="color:red;">@MusicianErrorMessage</span>
+<MusicianEditor @ref="musicianEditor"
+                        CancelPressed="EditMusicianCancelled"
+                        MusicianAdded="MusicianAdded"
+                        MusicianUpdated="MusicianUpdated"
+                        >
+</MusicianEditor>
+<br />
+<br />
+
 @code {
+
+    #region Instruments
+
     private InstrumentEditor instrumentEditor;
     private bool disableInstrumentList = false;
     private bool disableEditInstrument = true;
@@ -81,7 +129,7 @@
 
     private void InstrumentEditor_CancelClicked(string message)
     {
-        if(selectedInstrument != null)
+        if (selectedInstrument != null)
         {
             selectedInstrument = allInstruments.Where(inst => inst.InstrumentId == selectedInstrument.InstrumentId).FirstOrDefault();
         }
@@ -130,4 +178,100 @@
         disableInstrumentList = true;
     }
 
+    #endregion 
+
+    #region Musicians
+
+    string MusicianErrorMessage = "";
+    Musician SelectedMusician;
+    MusicianEditor musicianEditor;
+    bool DisableMusicianControls = false;
+    bool DisableMusicianEditButton = true;
+
+    void EditMusicianCancelled(string message)
+    {
+        if (SelectedMusician != null)
+        {
+            SelectedMusician =
+               (from x in DataManager.Musicians
+                where x.MusicianId == SelectedMusician.MusicianId
+                select x).FirstOrDefault();
+
+
+        }
+        DisableMusicianControls = false;
+        DisableMusicianEditButton = (SelectedMusician == null);
+    }
+
+    void MusicianAdded(Musician Musician)
+    {
+        DataManager.AddMusician(Musician);
+        DisableMusicianControls = false;
+        DisableMusicianEditButton = (SelectedMusician == null);
+        musicianEditor.Hide();
+        MusicianErrorMessage = "";
+    }
+
+    void MusicianUpdated(Musician musician)
+    {
+        SelectedMusician = DataManager.UpdateMusician(musician);
+        DisableMusicianControls = false;
+        DisableMusicianEditButton = false;
+        musicianEditor.Hide();
+    }
+
+    void MusicianSelected(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectMusicianById(Convert.ToInt32(args.Value));
+    }
+
+    void SelectMusicianById(int Id)
+    {
+        MusicianErrorMessage = "";
+
+
+        SelectedMusician =
+           (from x in DataManager.Musicians
+            where x.MusicianId.ToString() == Id.ToString()
+            select x).FirstOrDefault();
+
+
+        if (SelectedMusician != null)
+        {
+            DisableMusicianEditButton = false;
+        }
+        else
+            DisableMusicianEditButton = true;
+    }
+
+    async Task NewMusicianButtonClick()
+    {
+        MusicianErrorMessage = "";
+        DisableMusicianControls = true;
+        DisableMusicianEditButton = true;
+        await musicianEditor.NewMusician(DataManager.Instruments);
+    }
+
+    async Task EditMusicianButtonClick()
+    {
+        DisableMusicianControls = true;
+        DisableMusicianEditButton = true;
+        await musicianEditor.EditMusician(DataManager.Instruments,
+          SelectedMusician);
+    }
+
+    void DeleteMusicianButtonClick()
+    {
+        if (SelectedMusician != null)
+        {
+            MusicianErrorMessage =
+              DataManager.DeleteMusician(SelectedMusician, false);
+            if (DataManager.Musicians.Count == 1)
+            {
+                SelectedMusician = DataManager.Musicians.First();
+            }
+        }
+    }
+
+    #endregion
 }
