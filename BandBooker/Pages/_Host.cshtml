@@ -1,36 +1,45 @@
 ﻿@page "/"
 @namespace BandBooker.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@{
-    Layout = null;
-}
+
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BandBooker</title>
+    <title>Band Booker</title>
     <base href="~/" />
     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
     <link href="css/site.css" rel="stylesheet" />
 </head>
 <body>
     <app>
-        <component type="typeof(App)" render-mode="ServerPrerendered" />
+        @(await Html.RenderComponentAsync<App>(RenderMode.ServerPrerendered))
     </app>
 
-    <div id="blazor-error-ui">
-        <environment include="Staging,Production">
-            An error has occurred. This application may no longer respond until reloaded.
-        </environment>
-        <environment include="Development">
-            An unhandled exception has occurred. See browser dev tools for details.
-        </environment>
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">🗙</a>
-    </div>
-
     <script src="_framework/blazor.server.js"></script>
+    <script>
+        var attempts = 0;
+        var MAX_ATTEMPTS = 7;
+        var ATTEMPT_FREQUENCY_MS = 10;
+
+        window.SetFocus = (Id) => {
+            attempts = 0;
+            setTimeout(internalFocus, ATTEMPT_FREQUENCY_MS, Id);
+        };
+        function internalFocus(Id) {
+            var element = document.getElementById(Id);
+            if (element == null) {
+                attempts++;
+                if (attempts < MAX_ATTEMPTS) {
+                    setTimeout(internalFocus, ATTEMPT_FREQUENCY_MS, Id);
+                }
+                return;
+            }
+            element.focus();
+            element.select();
+        }
+    </script>
 </body>
 </html>

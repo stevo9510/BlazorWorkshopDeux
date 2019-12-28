@@ -1,11 +1,15 @@
 ﻿using BandBookerData.Models;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using System.Threading.Tasks;
 
 namespace BandBooker.Pages
 {
     public class InstrumentEditorCode : ComponentBase
     {
+        [Inject]
+        public IJSRuntime JsRuntime { get; set; }
+
         [Parameter]
         public EventCallback<Instrument> AddInstrumentClicked { get; set; }
 
@@ -18,11 +22,12 @@ namespace BandBooker.Pages
         [Parameter]
         public Instrument Instrument { get; set; }
 
+        protected const string InstrumentNameElementId = "InstrumentNameId";
         protected bool showInstrumentPanel;
         protected bool addMode = false;
         protected string submitButtonText;
         
-        public void Initialize(bool isAddMode)
+        public async Task Initialize(bool isAddMode)
         {
             showInstrumentPanel = true;
             if (isAddMode)
@@ -33,6 +38,7 @@ namespace BandBooker.Pages
             {
                 SetEditMode();
             }
+            await JsRuntime.InvokeVoidAsync("SetFocus", InstrumentNameElementId);
         }
 
         public void Hide()

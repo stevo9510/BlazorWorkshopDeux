@@ -5,7 +5,7 @@
         <EditForm Model="@Instrument" OnValidSubmit="@SubmitButtonClicked">
             <DataAnnotationsValidator/>
             <ValidationSummary/>
-            Name: <InstantInputText @bind-Value="@Instrument.Name" style="width:100%" type="text" />
+            Name: <InstantInputText id="@InstrumentNameElementId" @bind-Value="@Instrument.Name" style="width:100%" type="text" />
             <br />
             <br />
             <button type="submit">@submitButtonText</button>

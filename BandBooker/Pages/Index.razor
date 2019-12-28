@@ -91,18 +91,18 @@
         instrumentEditor.Hide();
     }
 
-    private void NewInstrumentClicked()
+    private async Task NewInstrumentClicked()
     {
         instrumentErrorMessage = string.Empty;
         DisableInteraction();
         selectedInstrument = new Instrument();
-        instrumentEditor.Initialize(true);
+        await instrumentEditor.Initialize(true);
     }
 
-    private void EditInstrumentClicked()
+    private async Task EditInstrumentClicked()
     {
         DisableInteraction();
-        instrumentEditor.Initialize(false);
+        await instrumentEditor.Initialize(false);
     }
 
     private void DeleteInstrumentClicked()
