@@ -31,7 +31,11 @@
 <br />
 <span style="color:red">@instrumentErrorMessage</span>
 
+<InstrumentEditor @ref="instrumentEditor" Instrument="selectedInstrument" AddInstrumentClicked="InstrumentEditor_AddInstrumentClicked"
+                  UpdateInstrumentClicked="InstrumentEditor_UpdateInstrumentClicked" CancelClicked="InstrumentEditor_CancelClicked" />
+
 @code {
+    private InstrumentEditor instrumentEditor;
     private bool disableInstrumentList = false;
     private bool disableEditInstrument = true;
     private string instrumentErrorMessage;
@@ -45,7 +49,7 @@
 
     private void OnInstrumentSelected(ChangeEventArgs changeEventArgs)
     {
-        if(int.TryParse(changeEventArgs.Value?.ToString(), out int instrumentId))
+        if (int.TryParse(changeEventArgs.Value?.ToString(), out int instrumentId))
         {
             selectedInstrument = allInstruments.Where(inst => inst.InstrumentId == instrumentId).FirstOrDefault();
             string instrumentName = selectedInstrument?.Name;
@@ -57,19 +61,53 @@
         }
     }
 
+    private void InstrumentEditor_AddInstrumentClicked(Instrument instrument)
+    {
+        DataManager.AddInstrument(instrument);
+        EnableInteraction();
+        allInstruments = DataManager.Instruments;
+        selectedInstrument = allInstruments.Where(inst => inst.InstrumentId == instrument.InstrumentId).FirstOrDefault();
+        instrumentEditor.Hide();
+    }
+
+    private void InstrumentEditor_UpdateInstrumentClicked(string message)
+    {
+        selectedInstrument = DataManager.UpdateInstrument(selectedInstrument);
+        allInstruments = DataManager.Instruments;
+
+        EnableInteraction();
+        instrumentEditor.Hide();
+    }
+
+    private void InstrumentEditor_CancelClicked(string message)
+    {
+        if(selectedInstrument != null)
+        {
+            selectedInstrument = allInstruments.Where(inst => inst.InstrumentId == selectedInstrument.InstrumentId).FirstOrDefault();
+        }
+
+        instrumentErrorMessage = message;
+        EnableInteraction();
+        instrumentEditor.Hide();
+    }
+
     private void NewInstrumentClicked()
     {
-
+        instrumentErrorMessage = string.Empty;
+        DisableInteraction();
+        selectedInstrument = new Instrument();
+        instrumentEditor.Initialize(true);
     }
 
     private void EditInstrumentClicked()
     {
-
+        DisableInteraction();
+        instrumentEditor.Initialize(false);
     }
 
     private void DeleteInstrumentClicked()
     {
-        if(selectedInstrument != null)
+        if (selectedInstrument != null)
         {
             instrumentErrorMessage = DataManager.DeleteInstrument(selectedInstrument);
             if (string.IsNullOrWhiteSpace(instrumentErrorMessage))
@@ -78,6 +116,18 @@
                 selectedInstrument = allInstruments.FirstOrDefault();
             }
         }
+    }
+
+    private void EnableInteraction()
+    {
+        disableEditInstrument = selectedInstrument == null;
+        disableInstrumentList = false;
+    }
+
+    private void DisableInteraction()
+    {
+        disableEditInstrument = true;
+        disableInstrumentList = true;
     }
 
 }

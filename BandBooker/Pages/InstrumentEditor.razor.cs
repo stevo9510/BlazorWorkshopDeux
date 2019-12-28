@@ -35,6 +35,11 @@ namespace BandBooker.Pages
             }
         }
 
+        public void Hide()
+        {
+            showInstrumentPanel = false;
+        }
+
         private void SetAddMode()
         {
             addMode = true;
