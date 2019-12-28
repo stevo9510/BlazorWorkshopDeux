@@ -12,6 +12,8 @@
     <base href="~/" />
     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
     <link href="css/site.css" rel="stylesheet" />
+    <script src="ServiceWorkerRegister.js"></script>
+    <link href="/manifest.json" rel="manifest" />
 </head>
 <body>
     <app>
@@ -28,6 +30,7 @@
             attempts = 0;
             setTimeout(internalFocus, ATTEMPT_FREQUENCY_MS, Id);
         };
+
         function internalFocus(Id) {
             var element = document.getElementById(Id);
             if (element == null) {
@@ -40,6 +43,11 @@
             element.focus();
             element.select();
         }
+
+        window.GetInputValue = (Id) => {
+            var elem = document.getElementById(Id);
+            return elem.value;
+        };
     </script>
 </body>
 </html>

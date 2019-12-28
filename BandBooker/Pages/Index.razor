@@ -2,6 +2,8 @@
 @using BandBookerData;
 @using BandBookerData.Models;
 @using Microsoft.AspNetCore.Components;
+@using BandBooker.Data;
+@using Microsoft.AspNetCore.SignalR.Client;
 
 <h2>Instruments</h2>
 <select size="10" style="width:100%;"
@@ -74,12 +76,34 @@
                         CancelPressed="EditMusicianCancelled"
                         MusicianAdded="MusicianAdded"
                         MusicianUpdated="MusicianUpdated"
-                        >
+                BioUpdated="MusicianBioUpdated">
 </MusicianEditor>
 <br />
 <br />
 
 @code {
+
+    private HubConnection connection;
+
+    protected async override Task OnInitializedAsync()
+    {
+        allInstruments = await ApiService.GetInstruments();
+
+        connection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:44324/adminHub")
+            .Build();
+
+        connection.On<int, string>("ReceiveSyncMusicianBio", this.OnReceiveSyncMusicianBio);
+
+        try
+        {
+            await connection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
 
     #region Instruments
 
@@ -89,11 +113,6 @@
     private string instrumentErrorMessage;
     private Instrument selectedInstrument;
     private List<Instrument> allInstruments = new List<Instrument>();
-
-    protected override void OnInitialized()
-    {
-        allInstruments = DataManager.Instruments;
-    }
 
     private void OnInstrumentSelected(ChangeEventArgs changeEventArgs)
     {
@@ -178,7 +197,7 @@
         disableInstrumentList = true;
     }
 
-    #endregion 
+    #endregion
 
     #region Musicians
 
@@ -270,6 +289,24 @@
             {
                 SelectedMusician = DataManager.Musicians.First();
             }
+        }
+    }
+
+    async Task MusicianBioUpdated(string bio)
+    {
+        if (SelectedMusician != null)
+        {
+            await connection.InvokeAsync("SyncMusicianBio", SelectedMusician.MusicianId, bio);
+        }
+    }
+
+    private void OnReceiveSyncMusicianBio(int musicianId, string bio)
+    {
+        Musician musician = DataManager.Musicians.Where(m => m.MusicianId == musicianId).FirstOrDefault();
+
+        if (musician != null)
+        {
+            musicianEditor.UpdateMusicianBio(musicianId, bio);
         }
     }
 

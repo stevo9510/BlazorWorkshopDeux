@@ -28,11 +28,8 @@
                                                    type="text" style="width:100%;" />
                 <br /><br />
                 Bio:
-                <textarea id="BioControl" @bind="@Musician.Bio"
-                                       rows="4"
-                                       style="width: 100%; overflow: hidden;
-                    overflow-wrap: break-word;
-                    overflow-y: scroll; " />
+                <textarea id="BioControl" @bind="@Musician.Bio" bind:event="oninput" @oninput="SyncMusicianBio" rows="4"
+                          style="width:100%;overflow:hidden;overflow-wrap:break-word;overflow-y:scroll;" />
                 <br />
                 <table style="width:100%">
                     <tr>
@@ -143,6 +140,9 @@
 
     [Parameter]
     public EventCallback<Musician> MusicianUpdated { get; set; }
+
+    [Parameter]
+    public EventCallback<string> BioUpdated { get; set; }
 
     Musician Musician { get; set; } = new Musician();
     bool ShowMusicianPanel = false;
@@ -275,6 +275,15 @@
         await js.InvokeVoidAsync("SetFocus", "musician.name");
     }
 
+    public void UpdateMusicianBio(int musicianId, string bio)
+    {
+        if (Musician != null && Musician.MusicianId == musicianId)
+        {
+            Musician.Bio = bio;
+            StateHasChanged();
+        }
+    }
+
     async Task SubmitButtonPressed()
     {
         if (Adding)
@@ -291,5 +300,17 @@
     {
         ShowMusicianPanel = false;
         await CancelPressed.InvokeAsync("");
+    }
+
+    public async Task SyncMusicianBio(ChangeEventArgs e)
+    {
+        try
+        {
+            await BioUpdated.InvokeAsync(e.Value.ToString());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 }
