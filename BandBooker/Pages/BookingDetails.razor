@@ -1,0 +1,110 @@
+﻿@using BandBookerData;
+@using BandBookerData.Models;
+
+@if (ShowBookingDetails && Booking != null)
+{
+    <div style="background-color:lightgray;">
+        <div style="padding:1vw;">
+            Band: @Booking.Band.Name
+            <br />
+            Venue: @Booking.Venue.Name
+            <br />
+            Date: @Booking.DateAndTime.ToLongDateString()
+            <br />
+            Time: @Booking.DateAndTime.ToShortTimeString()
+            <br />
+            Booked: @Booking.Booked
+            <br />
+            @if (Booking.Booked)
+            {
+                <span>Date Booked: @Booking.DateBooked</span>
+                <br />
+            }
+            Pay Offering: @Booking.PayOffering
+            <br />
+            Required Instruments:
+            <ul>
+                @foreach (var ri in Booking.BookingInstrument)
+                {
+                    <li>@ri.Instrument.Name</li>
+                }
+            </ul>
+            Musicians who have responded:
+            <ul>
+                @foreach (var bmi in Booking.BookingMusicianInstrument)
+                {
+                    @if (bmi.Response == true)
+                    {
+                        <li>
+                            @bmi.Musician.Name&nbsp;on&nbsp;
+                        @bmi.Instrument.Name&nbsp;(confirmed)
+                    </li>
+                }
+                else
+                {
+                    <li>
+                        @bmi.Musician.Name&nbsp;
+                    can't play this gig (@bmi.ResponseReason)
+                </li>
+            }
+                }
+            </ul>
+            <button @onclick="CloseBookingDetails">Close</button>
+        </div>
+    </div>
+    @if (ShowResponseButtons == true)
+    {
+        <br />
+        <button @onclick="RespondYesToBookingRequest">
+            Respond Yes
+        </button>
+        <span>&nbsp;</span>
+        <button @onclick="RespondNoToBookingRequest">
+            Respond No
+        </button>
+    }
+}
+<br />
+<br />
+
+@code {
+
+    [Parameter]
+    public Booking Booking { get; set; }
+
+    [Parameter]
+    public bool ShowResponseButtons { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<Booking> MusicianYesResponse { get; set; }
+
+    [Parameter]
+    public EventCallback<Booking> MusicianNoResponse { get; set; }
+
+    bool ShowBookingDetails = false;
+
+    public void Show()
+    {
+        ShowBookingDetails = true;
+    }
+
+    public void Hide()
+    {
+        ShowBookingDetails = false;
+    }
+
+    async Task RespondYesToBookingRequest()
+    {
+        await MusicianYesResponse.InvokeAsync(Booking);
+    }
+
+    async Task RespondNoToBookingRequest()
+    {
+        await MusicianNoResponse.InvokeAsync(Booking);
+    }
+
+    void CloseBookingDetails()
+    {
+        ShowBookingDetails = false;
+    }
+}

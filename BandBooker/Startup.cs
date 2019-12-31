@@ -26,16 +26,18 @@ namespace BandBooker
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            // CHANGED: Use SQL Server instead of SQL Lite
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(
-                    Configuration.GetConnectionString("DefaultConnection")));
-            services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddDefaultIdentity<IdentityUser>()
+                .AddRoles<IdentityRole>() // Required to be able to use identity roles 
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
             services.AddSingleton<WeatherForecastService>();
-            services.AddFileReaderService(options => options.InitializeOnFirstCall = true);
+            // ADDED: Required for uploading files
+            services.AddFileReaderService(options => options.InitializeOnFirstCall = true); 
             services.AddSignalR();
         }
 
@@ -67,7 +69,7 @@ namespace BandBooker
                 endpoints.MapControllers();
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
-                endpoints.MapHub<AdminHub>("/adminhub");
+                endpoints.MapHub<AdminHub>("/adminhub");  // ADDED: Required to setup the SignalR Admin Hub.
             });
         }
     }

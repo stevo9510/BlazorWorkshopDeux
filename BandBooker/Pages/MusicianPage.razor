@@ -1,0 +1,304 @@
+﻿@page "/musicianpage"
+@using BandBookerData;
+@using BandBookerData.Models;
+@using Microsoft.AspNetCore.Components;
+@using System.Security.Claims;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (!IsAllowedToView)
+{
+    <span>Ask your administrator for access</span>
+}
+else
+{
+
+    @if (musician != null)
+    {
+        <h2>@musician.Name</h2>
+        <p>
+            <button @onclick="EditProfile">Edit Profile</button>
+            <br />
+            <MusicianEditor @ref="musicianEditor"
+                            CancelPressed="CancelPressed"
+                            MusicianUpdated="MusicianUpdated">
+            </MusicianEditor>
+
+            Bookings requiring your response:
+            <select @onchange="NewBookingSelected"
+                    @onclick="SelectedNewBookingClicked"
+                    size="10" style="width:100%;">
+
+                @foreach (var booking in NewBookings)
+                {
+                    <option value="@booking.BookingId">
+                        @booking.Name
+                    </option>
+                }
+            </select>
+            <BookingDetails @ref="newBookingDetails"
+                            Booking="BookingToConfirm"
+                            ShowResponseButtons="true"
+                            MusicianYesResponse="MusicianRespondedYes"
+                            MusicianNoResponse="MusicianRespondedNo">
+            </BookingDetails>
+            <BookingResponse @ref="newBookingResponse"
+                             MusiciansInstruments="MyInstrumentsForSelectedBooking"
+                             MusicianAcceptedBooking="MusicianAcceptedBooking"
+                             MusicianRejectedBooking="MusicianRejectedBooking"
+                             ResponseCancelled="BookingResponseCancelled">
+            </BookingResponse>
+
+
+            Booked Bookings:
+            <select @onchange="BookedBookingSelected"
+                    @onclick="SelectedBookedBookingClicked"
+                    size="10" style="width:100%;">
+
+                @foreach (var booking in BookedBookings)
+                {
+                    <option value="@booking.BookingId">
+                        @booking.Name
+                    </option>
+                }
+            </select>
+            <BookingDetails @ref="bookedBookingDetails"
+                            Booking="BookingToConfirm"
+                            ShowResponseButtons="true"
+                            MusicianYesResponse="MusicianRespondedYes"
+                            MusicianNoResponse="MusicianRespondedNo">
+            </BookingDetails>
+            <BookingResponse @ref="bookedBookingResponse"
+                             MusiciansInstruments="MyInstrumentsForSelectedBooking"
+                             MusicianAcceptedBooking="MusicianAcceptedBooking"
+                             MusicianRejectedBooking="MusicianRejectedBooking"
+                             ResponseCancelled="BookingResponseCancelled">
+            </BookingResponse>
+
+            All Bookings:
+            <select @onchange="AnyBookingSelected"
+                    @onclick="SelectedAnyBookingClicked"
+                    size="10" style="width:100%;">
+
+                @foreach (var booking in AllBookings)
+                {
+                    <option value="@booking.BookingId">
+                        @booking.Name
+                    </option>
+                }
+            </select>
+            <BookingDetails @ref="anyBookingDetails"
+                            Booking="BookingToConfirm"
+                            ShowResponseButtons="true"
+                            MusicianYesResponse="MusicianRespondedYes"
+                            MusicianNoResponse="MusicianRespondedNo">
+            </BookingDetails>
+            <BookingResponse @ref="anyBookingResponse"
+                             MusiciansInstruments="MyInstrumentsForSelectedBooking"
+                             MusicianAcceptedBooking="MusicianAcceptedBooking"
+                             MusicianRejectedBooking="MusicianRejectedBooking"
+                             ResponseCancelled="BookingResponseCancelled">
+            </BookingResponse>
+        </p>
+    }
+}
+
+@code {
+
+    Musician musician;
+    MusicianEditor musicianEditor;
+    List<Booking> NewBookings;
+    List<Booking> BookedBookings;
+    List<Booking> AllBookings;
+    List<Instrument> MyInstrumentsForSelectedBooking;
+    Booking SelectedNewBooking;
+    Booking SelectedBookedBooking;
+    Booking SelectedAnyBooking;
+    Booking BookingToConfirm;
+    BookingDetails newBookingDetails;
+    BookingDetails bookedBookingDetails;
+    BookingDetails anyBookingDetails;
+    BookingResponse newBookingResponse;
+    BookingResponse bookedBookingResponse;
+    BookingResponse anyBookingResponse;
+    string email = "";
+    bool IsAllowedToView = false;
+
+    string ResponseReason = "";
+
+    protected override void OnInitialized()
+    {
+        AuthenticationState authState = AuthenticationStateProvider
+            .GetAuthenticationStateAsync().GetAwaiter().GetResult();
+
+        ClaimsPrincipal user = authState.User;
+        email = user.Identity.Name;
+        if (email == null)
+            return;
+        if (!user.IsInRole("musician"))
+            return;
+        IsAllowedToView = true;
+        LoadMusician();
+    }
+
+    void MusicianAcceptedBooking(Instrument instrument)
+    {
+        DataManager.AddMusicianAndInstrumentToBooking(
+            BookingToConfirm, musician, instrument);
+        newBookingDetails.Hide();
+        bookedBookingDetails.Hide();
+        anyBookingDetails.Hide();
+        LoadMusician();
+    }
+
+    void MusicianRejectedBooking(string Reason)
+    {
+        DataManager.MusicianCannotPlayGig(
+            BookingToConfirm, musician, Reason);
+        newBookingDetails.Hide();
+        bookedBookingDetails.Hide();
+        anyBookingDetails.Hide();
+        LoadMusician();
+    }
+
+    void BookingResponseCancelled(string args)
+    {
+        newBookingDetails.Hide();
+        bookedBookingDetails.Hide();
+        anyBookingDetails.Hide();
+    }
+
+    void CancelReasonGivenForDecliningGig()
+    {
+        newBookingDetails.Hide();
+    }
+
+    void SelectedNewBookingClicked()
+    {
+        newBookingDetails.Show();
+    }
+
+    void SelectedBookedBookingClicked()
+    {
+        bookedBookingDetails.Show();
+    }
+
+    void SelectedAnyBookingClicked()
+    {
+        anyBookingDetails.Show();
+    }
+
+    void MusicianRespondedYes(Booking booking)
+    {
+        if (booking == SelectedNewBooking)
+        {
+            newBookingResponse.ShowYes();
+        }
+        else if (booking == SelectedBookedBooking)
+        {
+            bookedBookingResponse.ShowYes();
+        }
+        else if (booking == SelectedAnyBooking)
+        {
+            anyBookingResponse.ShowYes();
+        }
+    }
+
+    void MusicianRespondedNo(Booking booking)
+    {
+        if (booking == SelectedNewBooking)
+        {
+            newBookingResponse.ShowNo();
+        }
+        else if (booking == SelectedBookedBooking)
+        {
+            bookedBookingResponse.ShowNo();
+        }
+        else if (booking == SelectedAnyBooking)
+        {
+            anyBookingResponse.ShowNo();
+        }
+    }
+
+
+    void NewBookingSelected(ChangeEventArgs args)
+    {
+        BookingToConfirm = (from x in NewBookings
+                            where x.BookingId == Convert.ToInt32(args.Value)
+                            select x).FirstOrDefault();
+        SelectedNewBooking = BookingToConfirm;
+        MyInstrumentsForSelectedBooking =
+            DataManager.GetInstrumentsByBookingAndMusician(
+                BookingToConfirm, musician);
+    }
+
+    void BookedBookingSelected(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        BookingToConfirm = (from x in BookedBookings
+                            where x.BookingId == Convert.ToInt32(args.Value)
+                            select x).FirstOrDefault();
+        SelectedBookedBooking = BookingToConfirm;
+        MyInstrumentsForSelectedBooking =
+            DataManager.GetInstrumentsByBookingAndMusician(
+                BookingToConfirm, musician);
+    }
+
+    void AnyBookingSelected(ChangeEventArgs args)
+    {
+        BookingToConfirm = (from x in AllBookings
+                            where x.BookingId == Convert.ToInt32(args.Value)
+                            select x).FirstOrDefault();
+        SelectedAnyBooking = BookingToConfirm;
+        MyInstrumentsForSelectedBooking =
+            DataManager.GetInstrumentsByBookingAndMusician(
+                BookingToConfirm, musician);
+    }
+
+    void EditProfile()
+    {
+        musicianEditor.EditMusician(DataManager.Instruments, musician);
+    }
+
+    void CancelPressed(string message)
+    {
+        musicianEditor.Hide();
+    }
+
+    void MusicianUpdated(Musician Musician)
+    {
+        DataManager.UpdateMusician(Musician);
+        LoadMusician();
+        musicianEditor.Hide();
+    }
+
+    void LoadMusician()
+    {
+
+        if (!IsAllowedToView)
+            return;
+
+        musician = (from x in DataManager.Musicians
+                    where x.Email == email
+                    select x).FirstOrDefault();
+
+        if (musician == null)
+            return;
+
+        AllBookings = DataManager.GetAllBookingsByMusician(musician);
+        NewBookings = DataManager.GetBookingsMusicianNeedsToRespondTo(musician);
+
+        if (BookingToConfirm != null)
+        {
+            BookingToConfirm = (from x in AllBookings
+                                where x.BookingId == BookingToConfirm.BookingId
+                                select x).FirstOrDefault();
+            if (BookingToConfirm != null)
+            {
+                MyInstrumentsForSelectedBooking =
+                    DataManager.GetInstrumentsByBookingAndMusician(
+                        BookingToConfirm, musician);
+            }
+        }
+
+        BookedBookings = DataManager.GetBookingsByMusician(musician, true);
+    }
+}
