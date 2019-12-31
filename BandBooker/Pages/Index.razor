@@ -140,6 +140,43 @@
              VenueAdded="VenueAdded"
              VenueUpdated="VenueUpdated">
 </VenueEditor>
+<br />
+<br />
+
+<h2>Bookings</h2>
+<select @onchange="BookingSelected" size="10" style="width:100%;" disabled="@DisableBookingControls">
+    @foreach (var Booking in DataManager.Bookings)
+    {
+        if (SelectedBooking != null
+            && SelectedBooking.BookingId == Booking.BookingId)
+        {
+            <option selected value="@Booking.BookingId.ToString()">@Booking.Name</option>
+        }
+        else
+        {
+            <option value="@Booking.BookingId.ToString()">@Booking.Name</option>
+        }
+
+    }
+</select>
+<br />
+<button disabled="@DisableBookingControls" @onclick="NewBookingButtonClick">New</button>
+<span>&nbsp;</span>
+<button disabled="@DisableBookingEditButton" @onclick="EditBookingButtonClick">Edit</button>
+<span>&nbsp;</span>
+<button disabled="@DisableBookingEditButton" @onclick="DeleteBookingButtonClick">Delete</button>
+<br />
+<span style="color:red;">@BookingErrorMessage</span>
+<BookingEditor @ref="BookingEditor"
+               CancelPressed="EditBookingCancelled"
+               BookingAdded="BookingAdded"
+               BookingUpdated="BookingUpdated"
+               ContactMusicians="ContactMusicians"
+               BandWasBooked="BandWasBooked">
+</BookingEditor>
+<br />
+<br />
+
 @code {
 
     private HubConnection connection;
@@ -547,6 +584,155 @@
             DisableVenueEditButton = false;
         else
             DisableVenueEditButton = true;
+    }
+
+    #endregion
+
+    #region Bookings
+
+    string BookingErrorMessage = "";
+    Booking SelectedBooking;
+    BookingEditor BookingEditor;
+    bool DisableBookingControls = false;
+    bool DisableBookingEditButton = true;
+
+    void ContactMusicians(Booking booking)
+    {
+        // send email to each musician
+        string subject = "Potential Gig for " + booking.Band.Name;
+        string body = booking.Band.Name + " at "
+          + booking.Venue.Name + " on "
+          + booking.DateAndTime.ToLongDateString() + " at "
+          + booking.DateAndTime.ToShortTimeString()
+          + " \n\nPlease go to {YOUR WEBSITE} to confirm or decline this gig.";
+
+        var musicians = DataManager.GetMusicainsToInviteToBooking(booking);
+
+        // TODO: Send Email here to all musicians
+
+        BookingErrorMessage = "Musicians have been contacted!";
+        BookingEditor.Hide();
+        DisableBookingControls = false;
+        DisableBookingEditButton = false;
+    }
+
+    void EditBookingCancelled(string message)
+    {
+        if (SelectedBooking != null)
+        {
+            SelectedBooking = (from x in DataManager.Bookings
+                               where x.BookingId == SelectedBooking.BookingId
+                               select x).FirstOrDefault();
+        }
+
+        DisableBookingControls = false;
+        DisableBookingEditButton = false;
+        BandErrorMessage = "";
+    }
+
+    void BookingAdded(Booking Booking)
+    {
+        DataManager.AddBooking(Booking);
+        DisableBookingControls = false;
+        DisableBookingEditButton = (SelectedBooking == null);
+        BookingEditor.Hide();
+    }
+
+    void BookingUpdated(Booking Booking)
+    {
+        SelectedBooking = DataManager.UpdateBooking(Booking);
+        DisableBookingControls = false;
+        DisableBookingEditButton = false;
+        BookingEditor.Hide();
+    }
+
+    void BookingSelected(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectBookingById(Convert.ToInt32(args.Value));
+    }
+
+    void SelectBookingById(int Id)
+    {
+        BookingErrorMessage = "";
+
+        SelectedBooking = (from x in DataManager.Bookings
+                           where x.BookingId.ToString() == Id.ToString()
+                           select x).FirstOrDefault();
+        if (SelectedBooking != null)
+        {
+            DisableBookingEditButton = false;
+        }
+        else
+            DisableBookingEditButton = true;
+    }
+
+    async Task NewBookingButtonClick()
+    {
+        var Bands = DataManager.Bands;
+        if (Bands.Count == 0)
+        {
+            BookingErrorMessage = "Please add a band first.";
+            return;
+        }
+
+        var Venues = DataManager.Venues;
+        if (Venues.Count == 0)
+        {
+            BookingErrorMessage = "Please add a venue first.";
+            return;
+        }
+
+        BookingErrorMessage = "";
+        DisableBookingControls = true;
+        DisableBookingEditButton = true;
+        await BookingEditor.NewBooking(Bands, Venues);
+    }
+
+    async Task EditBookingButtonClick()
+    {
+        DisableBookingControls = true;
+        DisableBookingEditButton = true;
+        await BookingEditor.EditBooking(DataManager.Bands,
+            DataManager.Venues, SelectedBooking);
+    }
+
+    void BandWasBooked(Booking booking)
+    {
+        // send email to each musician
+        string subject = "New Booking for " + booking.Band.Name;
+        string body = booking.Band.Name + " has been booked at "
+          + booking.Venue.Name + " on "
+          + booking.DateAndTime.ToLongDateString() + " at "
+          + booking.DateAndTime.ToShortTimeString()
+          + " with the following musicians:\n\n";
+        foreach (var bmi in booking.BookingMusicianInstrument)
+        {
+            body += bmi.Musician.Name + " ("
+                + bmi.Instrument.Name + ")\n";
+        }
+
+        // TODO: Send Email Here to all BookingMusicians
+
+        BookingErrorMessage = "Emails have been sent!";
+        BookingEditor.Hide();
+
+        // Update the booking now that the Booked bool has been set
+        DataManager.UpdateBooking(booking);
+    }
+
+    void DeleteBookingButtonClick()
+    {
+        var msg = DataManager.DeleteBooking(SelectedBooking, false);
+        BookingErrorMessage = "";
+        if (msg == "")
+        {
+            SelectedBooking = null;
+            DisableBookingEditButton = true;
+        }
+        else
+        {
+            BookingErrorMessage = msg;
+        }
     }
 
     #endregion

@@ -1,0 +1,298 @@
+﻿@using Microsoft.AspNetCore.Components.Web;
+@using Microsoft.AspNetCore.Components;
+@using BandBookerData.Models;
+@inject IJSRuntime js
+
+@if (@ShowBookingPanel == true)
+{
+    <div style="background-color:lightgray;">
+        <div style="padding:1vw;">
+            <EditForm Model="@Booking" OnValidSubmit="@SubmitButtonPressed">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                Name:
+                <InstantInputText @bind-Value="@Booking.Name"
+                                  id="booking.name"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                Band:
+                <br />
+                <select @onchange="BandSelected" style="width:100%;">
+                    @foreach (var band in AllBands)
+                    {
+                        @if (band.BandId == Booking.BandId)
+                        {
+                            <option selected
+                                    value="@band.BandId.ToString()">
+                                @band.Name
+                            </option>
+                        }
+                        else
+                        {
+                            <option value="@band.BandId.ToString()">
+                                @band.Name
+                            </option>
+                        }
+                    }
+                </select>
+                <br /><br />
+                Venue:
+                <br />
+                <select @onchange="VenueSelected" style="width:100%;">
+                    @foreach (var venue in AllVenues)
+                    {
+                        @if (venue.VenueId == Booking.VenueId)
+                        {
+                            <option selected
+                                    value="@venue.VenueId.ToString()">
+                                @venue.Name
+                            </option>
+                        }
+                        else
+                        {
+                            <option value="@venue.VenueId.ToString()">
+                                @venue.Name
+                            </option>
+                        }
+                    }
+                </select>
+                <br /><br />
+                Date/Time:
+                <input @bind-value="@Booking.DateAndTime" type="date" />
+                &nbsp;
+                <input @bind-value="@Booking.DateAndTime" type="text" />
+                <br /><br />
+                Pay Offering:
+                <input @bind-value="@Booking.PayOffering"
+                       type="text" style="width:100%;" />
+                <br /><br />
+                @if (Booking.Booked && Booking.DateBooked != null)
+                {
+                    <span>Date Booked:</span>
+                    <input @bind-value="@Booking.DateBooked"
+                           type="text" style="width:100%;" />
+                    <br /><br />
+                }
+                Musicians Who Have Accepted:
+                <select size="10" style="width:100%;">
+                    @foreach (var bmi in Booking.BookingMusicianInstrument)
+                    {
+                        @if (bmi.Response == true)
+                        {
+                            <option>
+                                @bmi.Musician.Name&nbsp;on&nbsp;@bmi.Instrument.Name
+                            </option>
+                        }
+                    }
+                </select>
+                <br /><br />
+                Musicians Who Have Declined:
+                <select size="10" style="width:100%;">
+                    @foreach (var bmi in Booking.BookingMusicianInstrument)
+                    {
+                        @if (bmi.Response == false && bmi.ResponseDate != null)
+                        {
+                            <option>
+                                @bmi.Musician.Name&nbsp;(@bmi.ResponseReason)
+                            </option>
+                        }
+                    }
+                </select>
+                <br /><br />
+                <ObjectPicker ItemType="Instrument"
+                              ItemTypePlural="Instruments"
+                              TextPropertyName="Name"
+                              ValuePropertyName="InstrumentId"
+                              AllItems="@BandInstruments"
+                              SelectedItems="@SelectedInstruments">
+                </ObjectPicker>
+
+                <br /><br />
+                <button type="submit">@SubmitButtonText</button>
+                <span>&nbsp;</span>
+                @if (!Booking.Booked)
+                {
+                    if (!Adding)
+                    {
+                        <button type="button"
+                                @onclick="InviteMusicians">
+                            Invite Musicians
+                        </button>
+                        <span>&nbsp;</span>
+                        <button type="button" @onclick="BookBand">Book it!</button>
+                        <span>&nbsp;</span>
+                    }
+                }
+
+                <button type="button"
+                        @onclick="CancelButtonPressed">
+                    Cancel
+                </button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+
+    private List<Band> AllBands { get; set; }
+    private List<Venue> AllVenues { get; set; }
+    private List<Instrument> BandInstruments { get; set; } = new List<Instrument>();
+    private List<Instrument> SelectedInstruments { get; set; } = new List<Instrument>();
+
+    [Parameter]
+    public EventCallback<string> CancelPressed { get; set; }
+
+    [Parameter]
+    public EventCallback<Booking> BookingAdded { get; set; }
+
+    [Parameter]
+    public EventCallback<Booking> BookingUpdated { get; set; }
+
+    [Parameter]
+    public EventCallback<Booking> ContactMusicians { get; set; }
+
+    [Parameter]
+    public EventCallback<Booking> BandWasBooked { get; set; }
+
+    Booking Booking { get; set; } = new Booking();
+    bool ShowBookingPanel = false;
+    bool Adding = false;
+    string SubmitButtonText = "";
+
+    async Task InviteMusicians()
+    {
+        await ContactMusicians.InvokeAsync(this.Booking);
+    }
+
+    void BandSelected(ChangeEventArgs args)
+    {
+        var id =  Convert.ToInt32(args.Value);
+        var band = (from x in AllBands
+                    where x.BandId == id
+                    select x).FirstOrDefault();
+        LoadBand(band);
+    }
+
+    void LoadBand(Band band)
+    {
+        Booking.BandId = band.BandId;
+        Booking.Band = band;
+        LoadBandInstruments();
+    }
+
+    void LoadBandInstruments()
+    {
+        BandInstruments.Clear();
+        var band = (from x in AllBands
+                    where x.BandId == Booking.BandId
+                    select x).FirstOrDefault();
+        foreach (var bm in band.BandMusician)
+        {
+            foreach (var i in bm.Musician.MusicianInstrument)
+            {
+                BandInstruments.Add(i.Instrument);
+            }
+        }
+    }
+
+    void VenueSelected(ChangeEventArgs args)
+    {
+
+        Booking.VenueId = Convert.ToInt32(args.Value);
+        Booking.Venue = (from x in AllVenues
+                         where x.VenueId == Booking.VenueId
+                         select x).FirstOrDefault();
+    }
+
+    public void Hide()
+    {
+        ShowBookingPanel = false;
+    }
+
+    public async Task BookBand()
+    {
+        Booking.Booked = true;
+        Booking.DateBooked = DateTime.Now;
+        await BandWasBooked.InvokeAsync(Booking);
+    }
+
+    public async Task NewBooking(List<Band> Bands, List<Venue> Venues)
+    {
+        BandInstruments = new List<Instrument>();
+        SelectedInstruments = new List<Instrument>();
+
+        AllBands = Bands;
+        AllVenues = Venues;
+        if (AllBands.Count == 0 || AllVenues.Count == 0)
+        {
+            return;
+        }
+
+        this.Booking = new Booking();
+        this.Booking.Venue = AllVenues.FirstOrDefault();
+        this.Booking.VenueId = this.Booking.Venue.VenueId;
+        this.Booking.Band = AllBands.FirstOrDefault();
+        this.Booking.BandId = this.Booking.Band.BandId;
+        this.Booking.DateAndTime = DateTime.Now;
+        LoadBandInstruments();
+
+        Adding = true;
+        SubmitButtonText = "Add";
+        ShowBookingPanel = true;
+        await js.InvokeVoidAsync("SetFocus", "booking.name");
+    }
+
+    public async Task EditBooking(List<Band> Bands, List<Venue> Venues, Booking Booking)
+    {
+        this.Booking = Booking;
+        BandInstruments = new List<Instrument>();
+        SelectedInstruments = new List<Instrument>();
+        foreach (var bi in Booking.BookingInstrument)
+        {
+            SelectedInstruments.Add(bi.Instrument);
+        }
+        AllBands = Bands;
+        AllVenues = Venues;
+        if (Booking.Band != null)
+        {
+            LoadBand(Booking.Band);
+        }
+        Adding = false;
+        SubmitButtonText = "Update";
+        ShowBookingPanel = true;
+        await js.InvokeVoidAsync("SetFocus", "booking.name");
+    }
+
+    async Task SubmitButtonPressed()
+    {
+        // Clear booking's instruments and add the selected instruments
+        this.Booking.BookingInstrument.Clear();
+        foreach (var instrument in SelectedInstruments)
+        {
+            this.Booking.BookingInstrument.Add(
+                new BookingInstrument
+                {
+                    Instrument = instrument,
+                    InstrumentId = instrument.InstrumentId,
+                    Booking = this.Booking,
+                    BookingId = this.Booking.BookingId
+                });
+        }
+
+        if (Adding)
+        {
+            await BookingAdded.InvokeAsync(this.Booking);
+        }
+        else
+        {
+            await BookingUpdated.InvokeAsync(this.Booking);
+        }
+    }
+
+    async Task CancelButtonPressed()
+    {
+        ShowBookingPanel = false;
+        await CancelPressed.InvokeAsync("");
+    }
+}
