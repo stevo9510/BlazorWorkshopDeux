@@ -81,6 +81,35 @@
 <br />
 <br />
 
+<h2>Bands</h2>
+<select @onchange="BandSelected" size="10" style="width:100%;" disabled="@DisableBandControls">
+    @foreach (var band in DataManager.Bands)
+    {
+        if (SelectedBand != null
+            && SelectedBand.BandId == band.BandId)
+        {
+            <option selected value="@band.BandId.ToString()">@band.Name</option>
+        }
+        else
+        {
+            <option value="@band.BandId.ToString()">@band.Name</option>
+        }
+    }
+</select>
+<br />
+<button disabled="@DisableBandControls" @onclick="NewBandButtonClick">New</button>
+<span>&nbsp;</span>
+<button disabled="@DisableBandEditButton" @onclick="EditBandButtonClick">Edit</button>
+<span>&nbsp;</span>
+<button disabled="@DisableBandEditButton" @onclick="DeleteBandButtonClick">Delete</button>
+<br />
+<span style="color:red;">@BandErrorMessage</span>
+<BandEditor @ref="bandEditor"
+            CancelPressed="EditBandCancelled"
+            BandAdded="BandAdded"
+            BandUpdated="BandUpdated">
+</BandEditor>
+
 @code {
 
     private HubConnection connection;
@@ -307,6 +336,91 @@
         if (musician != null)
         {
             musicianEditor.UpdateMusicianBio(musicianId, bio);
+        }
+    }
+
+    #endregion
+
+    #region Bands
+
+    string BandErrorMessage = "";
+    Band SelectedBand;
+    BandEditor bandEditor;
+    bool DisableBandControls = false;
+    bool DisableBandEditButton = true;
+
+    void EditBandCancelled(string message)
+    {
+        if (SelectedBand != null)
+        {
+            SelectedBand = (from x in DataManager.Bands
+                            where x.BandId == SelectedBand.BandId
+                            select x).FirstOrDefault();
+        }
+
+        DisableBandControls = false;
+        DisableBandEditButton = (SelectedBand == null);
+        BandErrorMessage = "";
+    }
+
+    void BandAdded(Band Band)
+    {
+        DataManager.AddBand(Band);
+        DisableBandControls = false;
+        DisableBandEditButton = (SelectedBand == null);
+        bandEditor.Hide();
+    }
+
+    void BandUpdated(Band Band)
+    {
+        SelectedBand = DataManager.UpdateBand(Band);
+        DisableBandControls = false;
+        DisableBandEditButton = false;
+        bandEditor.Hide();
+    }
+
+    void BandSelected(ChangeEventArgs args)
+    {
+        SelectBandById(Convert.ToInt32(args.Value));
+    }
+
+    void SelectBandById(int Id)
+    {
+        BandErrorMessage = "";
+
+        SelectedBand = (from x in DataManager.Bands
+                        where x.BandId.ToString() == Id.ToString()
+                        select x).FirstOrDefault();
+
+        DisableBandEditButton = SelectedBand == null;
+    }
+
+    async Task NewBandButtonClick()
+    {
+        BandErrorMessage = "";
+        DisableBandControls = true;
+        DisableBandEditButton = true;
+        await bandEditor.NewBand(DataManager.Musicians);
+    }
+
+    async Task EditBandButtonClick()
+    {
+        DisableBandControls = true;
+        DisableBandEditButton = true;
+        await bandEditor.EditBand(DataManager.Musicians, SelectedBand);
+    }
+
+    void DeleteBandButtonClick()
+    {
+        var msg = DataManager.DeleteBand(SelectedBand, false);
+        if (msg == "")
+        {
+            SelectedBand = null;
+            DisableBandEditButton = true;
+        }
+        else
+        {
+            BandErrorMessage = msg;
         }
     }
 

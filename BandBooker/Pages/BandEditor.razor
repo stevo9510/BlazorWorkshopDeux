@@ -1,0 +1,124 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@using Data
+@using BandBookerData.Models
+@inject IJSRuntime js
+
+@if (@ShowBandPanel == true)
+{
+    <div style="background-color:lightgray;">
+        <div style="padding:1vw;">
+            <EditForm Model="@Band" OnValidSubmit="@SubmitButtonPressed">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                Name:
+                <InstantInputText @bind-Value="@Band.Name"
+                                  id="band.name"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                Description:
+                <textarea id="BioControl" @bind="@Band.Description"
+                          rows="4"
+                          style="width: 100%;
+                                 overflow: hidden; overflow-wrap:
+                                 break-word; overflow-y: scroll; " />
+                <br />
+                <ObjectPicker ItemType="Musician"
+                              ItemTypePlural="Musicians"
+                              TextPropertyName="Name"
+                              ValuePropertyName="MusicianId"
+                              AllItems="@AllMusicians"
+                              SelectedItems="@SelectedMusicians">
+                </ObjectPicker>
+
+                <br /><br />
+                <button type="submit">@SubmitButtonText</button>
+                <span>&nbsp;</span>
+                <button type="button" @onclick="CancelButtonPressed">Cancel</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+
+    private List<Musician> AllMusicians { get; set; }
+    private List<Musician> SelectedMusicians { get; set; }
+
+    [Parameter]
+    public EventCallback<string> CancelPressed { get; set; }
+
+    [Parameter]
+    public EventCallback<Band> BandAdded { get; set; }
+
+    [Parameter]
+    public EventCallback<Band> BandUpdated { get; set; }
+
+    Band Band { get; set; } = new Band();
+    bool ShowBandPanel = false;
+    bool Adding = false;
+    string SubmitButtonText = "";
+
+    public void Hide()
+    {
+        ShowBandPanel = false;
+    }
+
+    public async Task NewBand(List<Musician> Musicians)
+    {
+        this.Band = new Band();
+        AllMusicians = Musicians;
+        SelectedMusicians = new List<Musician>();
+        Adding = true;
+        SubmitButtonText = "Add";
+        ShowBandPanel = true;
+        await js.InvokeVoidAsync("SetFocus", "band.name");
+    }
+
+    public async Task EditBand(List<Musician> Musicians, Band Band)
+    {
+        this.Band = Band;
+        AllMusicians = Musicians;
+        SelectedMusicians = new List<Musician>();
+        foreach (var bm in Band.BandMusician)
+        {
+            SelectedMusicians.Add(bm.Musician);
+        }
+        Adding = false;
+        SubmitButtonText = "Update";
+        ShowBandPanel = true;
+        await js.InvokeVoidAsync("SetFocus", "band.name");
+    }
+
+    async Task SubmitButtonPressed()
+    {
+        // Clear band's musician and add the selected musicians
+        this.Band.BandMusician.Clear();
+        foreach (var musician in SelectedMusicians)
+        {
+            this.Band.BandMusician.Add(
+            new BandMusician
+            {
+                Band = this.Band,
+                BandId = this.Band.BandId,
+                Musician = musician,
+                MusicianId = musician.MusicianId
+            });
+        }
+
+        if (Adding)
+        {
+            await BandAdded.InvokeAsync(this.Band);
+        }
+        else
+        {
+            await BandUpdated.InvokeAsync(this.Band);
+        }
+    }
+
+    async Task CancelButtonPressed()
+    {
+        ShowBandPanel = false;
+        await CancelPressed.InvokeAsync("");
+    }
+}
