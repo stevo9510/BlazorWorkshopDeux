@@ -1,4 +1,6 @@
 ﻿@page "/"
+@using Microsoft.Extensions.Configuration;
+@inject IConfiguration Configuration;
 @using BandBookerData;
 @using BandBookerData.Models;
 @using Microsoft.AspNetCore.Components;
@@ -183,10 +185,12 @@
 
     protected async override Task OnInitializedAsync()
     {
+        string baseURL = Configuration["BaseURL"];
+
         allInstruments = await ApiService.GetInstruments();
 
         connection = new HubConnectionBuilder()
-            .WithUrl("https://localhost:44324/adminHub")
+            .WithUrl($"{baseURL}adminHub")
             .Build();
 
         connection.On<int, string>("ReceiveSyncMusicianBio", this.OnReceiveSyncMusicianBio);
@@ -601,10 +605,10 @@
         // send email to each musician
         string subject = "Potential Gig for " + booking.Band.Name;
         string body = booking.Band.Name + " at "
-          + booking.Venue.Name + " on "
-          + booking.DateAndTime.ToLongDateString() + " at "
-          + booking.DateAndTime.ToShortTimeString()
-          + " \n\nPlease go to {YOUR WEBSITE} to confirm or decline this gig.";
+  + booking.Venue.Name + " on "
+  + booking.DateAndTime.ToLongDateString() + " at "
+  + booking.DateAndTime.ToShortTimeString()
+  + " \n\nPlease go to {YOUR WEBSITE} to confirm or decline this gig.";
 
         var musicians = DataManager.GetMusicainsToInviteToBooking(booking);
 
@@ -701,10 +705,10 @@
         // send email to each musician
         string subject = "New Booking for " + booking.Band.Name;
         string body = booking.Band.Name + " has been booked at "
-          + booking.Venue.Name + " on "
-          + booking.DateAndTime.ToLongDateString() + " at "
-          + booking.DateAndTime.ToShortTimeString()
-          + " with the following musicians:\n\n";
+  + booking.Venue.Name + " on "
+  + booking.DateAndTime.ToLongDateString() + " at "
+  + booking.DateAndTime.ToShortTimeString()
+  + " with the following musicians:\n\n";
         foreach (var bmi in booking.BookingMusicianInstrument)
         {
             body += bmi.Musician.Name + " ("

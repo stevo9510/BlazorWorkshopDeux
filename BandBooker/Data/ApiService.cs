@@ -1,4 +1,5 @@
 ﻿using BandBookerData.Models;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -9,8 +10,16 @@ namespace BandBooker.Data
 {
     public class ApiService
     {
-        // TODO: Replace the baseURL with your app's base url.
-        private static string baseURL = "https://localhost:44324/";
+        private static string baseURL = "";
+
+        static ApiService()
+        {
+            var builder = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
+            var Configuration = builder.Build();
+            baseURL = Configuration["BaseURL"];
+        }
 
         public static async Task<List<Instrument>> GetInstruments()
         {
