@@ -1,0 +1,168 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@using Data
+@using BandBookerData.Models
+@using System.IO;
+@using Blazor.FileReader;
+@inject IFileReaderService fileReaderService;
+@inject IJSRuntime js
+
+@if (@Venue != null && @ShowVenuePanel == true)
+{
+    <div style="background-color:lightgray;">
+        <div style="padding:1vw;">
+            <EditForm Model="@Venue" OnValidSubmit="@SubmitButtonPressed">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                Name:
+                <InstantInputText @bind-Value="@Venue.Name"
+                                  id="venue.name"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                Description:
+                <textarea id="BioControl" @bind="@Venue.Description"
+                          rows="4"
+                          style="width: 100%; overflow: hidden;
+                        overflow-wrap: break-word; overflow-y: scroll; " />
+                <br /><br />
+                Contact Name:
+                <InstantInputText @bind-Value="@Venue.ContactName"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                Contact Email:
+                <InstantInputText @bind-Value="@Venue.ContactEmail"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                Contact Mobile Phone:
+                <InstantInputText @bind-Value="@Venue.ContactMobilePhone"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                Address:
+                <InstantInputText @bind-Value="@Venue.Address"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                Address Line 2:
+                <InstantInputText @bind-Value="@Venue.Address2"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                City, State, Zip:
+                <br />
+                <InstantInputText @bind-Value="@Venue.City"
+                                  type="text" style="width:60%;" />
+                &nbsp;
+                <InstantInputText @bind-Value="@Venue.State"
+                                  type="text" style="width:20%;" />
+                &nbsp;
+                <InstantInputText @bind-Value="@Venue.Zip"
+                                  type="text" style="width:10%;" />
+                <br /><br />
+                Phone:
+                <InstantInputText @bind-Value="@Venue.Phone"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                Website:
+                <InstantInputText @bind-Value="@Venue.Website"
+                                  type="text" style="width:100%;" />
+                <br /><br />
+                Photo:
+                <br />
+                <input type="file" @ref=inputTypeFileElement />
+                <button type="button" @onclick=ReadFile>Upload</button>
+                <br />
+                @if (@Venue.PhotoUrl != "")
+                {
+                    <img src="@Venue.PhotoUrl" />
+                }
+                <br /><br />
+                <button type="submit">@SubmitButtonText</button>
+                <span>&nbsp;</span>
+                <button type="button" @onclick="CancelButtonPressed">Cancel</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public EventCallback<string> CancelPressed { get; set; }
+
+    [Parameter]
+    public EventCallback<Venue> VenueAdded { get; set; }
+
+    [Parameter]
+    public EventCallback<Venue> VenueUpdated { get; set; }
+
+    Venue Venue { get; set; } = new Venue();
+    bool ShowVenuePanel = false;
+    ElementReference inputTypeFileElement;
+    bool Adding = false;
+    string SubmitButtonText = "";
+
+    public void Hide()
+    {
+        ShowVenuePanel = false;
+    }
+
+    public async Task ReadFile()
+    {
+        string filename = "wwwroot/images/";
+
+        foreach (var file in await
+           fileReaderService.CreateReference(inputTypeFileElement).EnumerateFilesAsync())
+        {
+            // Read into buffer and act (uses less memory)
+            using (Stream stream = await file.OpenReadAsync())
+            {
+                var buffer = new byte[stream.Length];
+                await stream.ReadAsync(buffer, 0, buffer.Length);
+
+                var info = await file.ReadFileInfoAsync();
+                filename += info.Name;
+
+                using (Stream outfile = System.IO.File.OpenWrite(filename))
+                {
+                    outfile.Write(buffer, 0, buffer.Length);
+                }
+                ImageResizer.ResizeAndSaveImage(filename, 200);
+                Venue.PhotoUrl = "/images/" + info.Name;
+            }
+        }
+    }
+
+    public async Task NewVenue()
+    {
+        this.Venue = new Venue();
+        Adding = true;
+        SubmitButtonText = "Add";
+        ShowVenuePanel = true;
+        await js.InvokeVoidAsync("SetFocus", "venue.name");
+    }
+
+    public async Task EditVenue(Venue Venue)
+    {
+        Adding = false;
+        SubmitButtonText = "Update";
+        this.Venue = Venue;
+        ShowVenuePanel = true;
+        await js.InvokeVoidAsync("SetFocus", "venue.name");
+    }
+
+    async Task SubmitButtonPressed()
+    {
+        if (Adding)
+        {
+            await VenueAdded.InvokeAsync(this.Venue);
+        }
+        else
+        {
+            await VenueUpdated.InvokeAsync(this.Venue);
+        }
+    }
+
+    async Task CancelButtonPressed()
+    {
+        ShowVenuePanel = false;
+        await CancelPressed.InvokeAsync("");
+    }
+}

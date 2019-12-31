@@ -110,6 +110,36 @@
             BandUpdated="BandUpdated">
 </BandEditor>
 
+<br />
+<br />
+<h2>Venues</h2>
+<select @onchange="VenueSelected" size="10" style="width:100%;" disabled="@DisableVenueControls">
+    @foreach (var Venue in DataManager.Venues)
+    {
+        if (SelectedVenue != null
+            && SelectedVenue.VenueId == Venue.VenueId)
+        {
+            <option selected value="@Venue.VenueId.ToString()">@Venue.Name</option>
+        }
+        else
+        {
+            <option value="@Venue.VenueId.ToString()">@Venue.Name</option>
+        }
+    }
+</select>
+<br />
+<button disabled="@DisableVenueControls" @onclick="NewVenueButtonClick">New</button>
+<span>&nbsp;</span>
+<button disabled="@DisableVenueEditButton" @onclick="EditVenueButtonClick">Edit</button>
+<span>&nbsp;</span>
+<button disabled="@DisableVenueEditButton" @onclick="DeleteVenueButtonClick">Delete</button>
+<br />
+<span style="color:red;">@VenueErrorMessage</span>
+<VenueEditor @ref="venueEditor"
+             CancelPressed="EditVenueCancelled"
+             VenueAdded="VenueAdded"
+             VenueUpdated="VenueUpdated">
+</VenueEditor>
 @code {
 
     private HubConnection connection;
@@ -425,4 +455,100 @@
     }
 
     #endregion
+
+    #region Venues
+
+    Venue SelectedVenue;
+    VenueEditor venueEditor;
+    bool DisableVenueControls = false;
+    bool DisableVenueEditButton = true;
+    string VenueErrorMessage = "";
+
+    void EditVenueCancelled(string message)
+    {
+        if (SelectedVenue != null)
+        {
+            SelectedVenue = (from x in DataManager.Venues
+                             where x.VenueId == SelectedVenue.VenueId
+                             select x).FirstOrDefault();
+        }
+        VenueErrorMessage = message;
+        DisableVenueControls = false;
+        DisableVenueEditButton = (SelectedVenue == null);
+    }
+
+    void VenueAdded(Venue venue)
+    {
+        try
+        {
+            DataManager.AddVenue(venue);
+            DisableVenueControls = false;
+            DisableVenueEditButton = (SelectedVenue == null);
+            venueEditor.Hide();
+        }
+        catch (Exception ex)
+        {
+            VenueErrorMessage = ex.Message;
+        }
+    }
+
+    void VenueUpdated(Venue venue)
+    {
+        try
+        {
+            SelectedVenue = DataManager.UpdateVenue(venue);
+            DisableVenueControls = false;
+            DisableVenueEditButton = (SelectedVenue == null);
+            venueEditor.Hide();
+        }
+        catch (Exception ex)
+        {
+            VenueErrorMessage = ex.Message;
+        }
+    }
+
+    async Task NewVenueButtonClick()
+    {
+        VenueErrorMessage = "";
+        DisableVenueControls = true;
+        DisableVenueEditButton = true;
+        await venueEditor.NewVenue();
+    }
+
+    async Task EditVenueButtonClick()
+    {
+        DisableVenueControls = true;
+        DisableVenueEditButton = true;
+        await venueEditor.EditVenue(SelectedVenue);
+    }
+
+    void DeleteVenueButtonClick()
+    {
+        string msg = DataManager.DeleteVenue(SelectedVenue, false);
+        if (msg == "")
+        {
+            SelectedVenue = null;
+            DisableVenueEditButton = true;
+        }
+        else
+        {
+            VenueErrorMessage = msg;
+        }
+    }
+
+    void VenueSelected(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        VenueErrorMessage = "";
+
+        SelectedVenue = (from x in DataManager.Venues
+                         where x.VenueId.ToString() == args.Value.ToString()
+                         select x).FirstOrDefault();
+        if (SelectedVenue != null)
+            DisableVenueEditButton = false;
+        else
+            DisableVenueEditButton = true;
+    }
+
+    #endregion
+
 }
