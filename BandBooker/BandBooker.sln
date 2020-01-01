@@ -7,6 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BandBooker", "BandBooker.cs
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BandBookerData", "..\BandBookerData\BandBookerData.csproj", "{78CF1822-0579-4AFF-AA3A-461CE01BB631}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1F9C7ABB-51E7-4FFF-B1EB-40E5A08FA758}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

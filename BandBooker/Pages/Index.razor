@@ -1,19 +1,15 @@
 ﻿@page "/"
-@inject IConfiguration Configuration;
-@inject AuthenticationStateProvider AuthenticationStateProvider;
+@inherits IndexCode
 @using Microsoft.Extensions.Configuration;
 @using BandBookerData;
 @using BandBookerData.Models;
-@using Microsoft.AspNetCore.Components;
-@using BandBooker.Data;
-@using Microsoft.AspNetCore.SignalR.Client;
-@using System.Security.Claims;
+
 <h1>Band Booker</h1>
-@if (!IsAllowedToView)
+@if (!isAllowedToView)
 {
-    @if (LoggedIn)
+    @if (loggedIn)
     {
-        if (@IsMusician)
+        if (isMusician)
         {
             <span>Select the Musician Button from the menu.</span>
         }
@@ -65,11 +61,11 @@ else
                       UpdateInstrumentClicked="InstrumentEditor_UpdateInstrumentClicked" CancelClicked="InstrumentEditor_CancelClicked" />
 
     <h2>Musicians</h2>
-    <select @onchange="MusicianSelected" size="10" style="width:100%;" disabled="@DisableMusicianControls">
+    <select @onchange="MusicianSelected" size="10" style="width:100%;" disabled="@disableMusicianControls">
         @foreach (var musician in DataManager.Musicians)
         {
-            if (SelectedMusician != null
-             && musician.MusicianId == SelectedMusician.MusicianId)
+            if (selectedMusician != null
+             && musician.MusicianId == selectedMusician.MusicianId)
             {
                 <option selected value="@musician.MusicianId.ToString()">@musician.Name</option>
             }
@@ -81,40 +77,36 @@ else
     </select>
     <br />
 
-    <button disabled="@DisableMusicianControls"
+    <button disabled="@disableMusicianControls"
                 @onclick="NewMusicianButtonClick">
         New
     </button>
     <span>&nbsp;</span>
 
-    <button disabled="@DisableMusicianEditButton"
+    <button disabled="@disableMusicianEditButton"
                 @onclick="EditMusicianButtonClick">
         Edit
     </button>
     <span>&nbsp;</span>
 
-    <button disabled="@DisableMusicianEditButton"
+    <button disabled="@disableMusicianEditButton"
                 @onclick="DeleteMusicianButtonClick">
         Delete
     </button>
     <br />
 
-    <span style="color:red;">@MusicianErrorMessage</span>
-    <MusicianEditor @ref="musicianEditor"
-                            CancelPressed="EditMusicianCancelled"
-                            MusicianAdded="MusicianAdded"
-                            MusicianUpdated="MusicianUpdated"
-                    BioUpdated="MusicianBioUpdated">
+    <span style="color:red;">@musicianErrorMessage</span>
+    <MusicianEditor @ref="musicianEditor" CancelPressed="EditMusicianCancelled" MusicianAdded="MusicianAdded" MusicianUpdated="MusicianUpdated" BioUpdated="MusicianBioUpdated">
     </MusicianEditor>
     <br />
     <br />
 
     <h2>Bands</h2>
-    <select @onchange="BandSelected" size="10" style="width:100%;" disabled="@DisableBandControls">
+    <select @onchange="BandSelected" size="10" style="width:100%;" disabled="@disableBandControls">
         @foreach (var band in DataManager.Bands)
         {
-            if (SelectedBand != null
-                && SelectedBand.BandId == band.BandId)
+            if (selectedBand != null
+                && selectedBand.BandId == band.BandId)
             {
                 <option selected value="@band.BandId.ToString()">@band.Name</option>
             }
@@ -125,13 +117,13 @@ else
         }
     </select>
     <br />
-    <button disabled="@DisableBandControls" @onclick="NewBandButtonClick">New</button>
+    <button disabled="@disableBandControls" @onclick="NewBandButtonClick">New</button>
     <span>&nbsp;</span>
-    <button disabled="@DisableBandEditButton" @onclick="EditBandButtonClick">Edit</button>
+    <button disabled="@disableBandEditButton" @onclick="EditBandButtonClick">Edit</button>
     <span>&nbsp;</span>
-    <button disabled="@DisableBandEditButton" @onclick="DeleteBandButtonClick">Delete</button>
+    <button disabled="@disableBandEditButton" @onclick="DeleteBandButtonClick">Delete</button>
     <br />
-    <span style="color:red;">@BandErrorMessage</span>
+    <span style="color:red;">@bandErrorMessage</span>
     <BandEditor @ref="bandEditor"
                 CancelPressed="EditBandCancelled"
                 BandAdded="BandAdded"
@@ -141,11 +133,11 @@ else
     <br />
     <br />
     <h2>Venues</h2>
-    <select @onchange="VenueSelected" size="10" style="width:100%;" disabled="@DisableVenueControls">
+    <select @onchange="VenueSelected" size="10" style="width:100%;" disabled="@disableVenueControls">
         @foreach (var Venue in DataManager.Venues)
         {
-            if (SelectedVenue != null
-                && SelectedVenue.VenueId == Venue.VenueId)
+            if (selectedVenue != null
+                && selectedVenue.VenueId == Venue.VenueId)
             {
                 <option selected value="@Venue.VenueId.ToString()">@Venue.Name</option>
             }
@@ -156,13 +148,13 @@ else
         }
     </select>
     <br />
-    <button disabled="@DisableVenueControls" @onclick="NewVenueButtonClick">New</button>
+    <button disabled="@disableVenueControls" @onclick="NewVenueButtonClick">New</button>
     <span>&nbsp;</span>
-    <button disabled="@DisableVenueEditButton" @onclick="EditVenueButtonClick">Edit</button>
+    <button disabled="@disableVenueEditButton" @onclick="EditVenueButtonClick">Edit</button>
     <span>&nbsp;</span>
-    <button disabled="@DisableVenueEditButton" @onclick="DeleteVenueButtonClick">Delete</button>
+    <button disabled="@disableVenueEditButton" @onclick="DeleteVenueButtonClick">Delete</button>
     <br />
-    <span style="color:red;">@VenueErrorMessage</span>
+    <span style="color:red;">@venueErrorMessage</span>
     <VenueEditor @ref="venueEditor"
                  CancelPressed="EditVenueCancelled"
                  VenueAdded="VenueAdded"
@@ -172,11 +164,11 @@ else
     <br />
 
     <h2>Bookings</h2>
-    <select @onchange="BookingSelected" size="10" style="width:100%;" disabled="@DisableBookingControls">
+    <select @onchange="BookingSelected" size="10" style="width:100%;" disabled="@disableBookingControls">
         @foreach (var Booking in DataManager.Bookings)
         {
-            if (SelectedBooking != null
-                && SelectedBooking.BookingId == Booking.BookingId)
+            if (selectedBooking != null
+                && selectedBooking.BookingId == Booking.BookingId)
             {
                 <option selected value="@Booking.BookingId.ToString()">@Booking.Name</option>
             }
@@ -188,14 +180,14 @@ else
         }
     </select>
     <br />
-    <button disabled="@DisableBookingControls" @onclick="NewBookingButtonClick">New</button>
+    <button disabled="@disableBookingControls" @onclick="NewBookingButtonClick">New</button>
     <span>&nbsp;</span>
-    <button disabled="@DisableBookingEditButton" @onclick="EditBookingButtonClick">Edit</button>
+    <button disabled="@disableBookingEditButton" @onclick="EditBookingButtonClick">Edit</button>
     <span>&nbsp;</span>
-    <button disabled="@DisableBookingEditButton" @onclick="DeleteBookingButtonClick">Delete</button>
+    <button disabled="@disableBookingEditButton" @onclick="DeleteBookingButtonClick">Delete</button>
     <br />
-    <span style="color:red;">@BookingErrorMessage</span>
-    <BookingEditor @ref="BookingEditor"
+    <span style="color:red;">@bookingErrorMessage</span>
+    <BookingEditor @ref="bookingEditor"
                    CancelPressed="EditBookingCancelled"
                    BookingAdded="BookingAdded"
                    BookingUpdated="BookingUpdated"
@@ -204,589 +196,5 @@ else
     </BookingEditor>
     <br />
     <br />
-
-}
-
-@code {
-
-    private HubConnection connection;
-    private bool IsAllowedToView = false;
-    private bool LoggedIn = false;
-    private bool IsMusician = false;
-
-    protected async override Task OnInitializedAsync()
-    {
-        AuthenticationState authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-
-        ClaimsPrincipal user = authenticationState.User;
-        string email = user.Identity.Name;
-        if (email == null)
-            return;
-
-        LoggedIn = true;
-        if (user.IsInRole("musician"))
-        {
-            IsMusician = true;
-        }
-
-        if (!user.IsInRole("manager"))
-            return;
-        IsAllowedToView = true;
-
-        string baseURL = Configuration["BaseURL"];
-
-        allInstruments = await ApiService.GetInstruments();
-
-        connection = new HubConnectionBuilder()
-            .WithUrl($"{baseURL}adminHub")
-            .Build();
-
-        connection.On<int, string>("ReceiveSyncMusicianBio", this.OnReceiveSyncMusicianBio);
-
-        try
-        {
-            await connection.StartAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
-    }
-
-    #region Instruments
-
-    private InstrumentEditor instrumentEditor;
-    private bool disableInstrumentList = false;
-    private bool disableEditInstrument = true;
-    private string instrumentErrorMessage;
-    private Instrument selectedInstrument;
-    private List<Instrument> allInstruments = new List<Instrument>();
-
-    private void OnInstrumentSelected(ChangeEventArgs changeEventArgs)
-    {
-        if (int.TryParse(changeEventArgs.Value?.ToString(), out int instrumentId))
-        {
-            selectedInstrument = allInstruments.Where(inst => inst.InstrumentId == instrumentId).FirstOrDefault();
-            string instrumentName = selectedInstrument?.Name;
-            disableEditInstrument = false;
-        }
-        else
-        {
-            disableEditInstrument = true;
-        }
-    }
-
-    private void InstrumentEditor_AddInstrumentClicked(Instrument instrument)
-    {
-        DataManager.AddInstrument(instrument);
-        EnableInteraction();
-        allInstruments = DataManager.Instruments;
-        selectedInstrument = allInstruments.Where(inst => inst.InstrumentId == instrument.InstrumentId).FirstOrDefault();
-        instrumentEditor.Hide();
-    }
-
-    private void InstrumentEditor_UpdateInstrumentClicked(string message)
-    {
-        selectedInstrument = DataManager.UpdateInstrument(selectedInstrument);
-        allInstruments = DataManager.Instruments;
-
-        EnableInteraction();
-        instrumentEditor.Hide();
-    }
-
-    private void InstrumentEditor_CancelClicked(string message)
-    {
-        if (selectedInstrument != null)
-        {
-            selectedInstrument = allInstruments.Where(inst => inst.InstrumentId == selectedInstrument.InstrumentId).FirstOrDefault();
-        }
-
-        instrumentErrorMessage = message;
-        EnableInteraction();
-        instrumentEditor.Hide();
-    }
-
-    private async Task NewInstrumentClicked()
-    {
-        instrumentErrorMessage = string.Empty;
-        DisableInteraction();
-        selectedInstrument = new Instrument();
-        await instrumentEditor.Initialize(true);
-    }
-
-    private async Task EditInstrumentClicked()
-    {
-        DisableInteraction();
-        await instrumentEditor.Initialize(false);
-    }
-
-    private void DeleteInstrumentClicked()
-    {
-        if (selectedInstrument != null)
-        {
-            instrumentErrorMessage = DataManager.DeleteInstrument(selectedInstrument);
-            if (string.IsNullOrWhiteSpace(instrumentErrorMessage))
-            {
-                allInstruments.Remove(selectedInstrument);
-                selectedInstrument = allInstruments.FirstOrDefault();
-            }
-        }
-    }
-
-    private void EnableInteraction()
-    {
-        disableEditInstrument = selectedInstrument == null;
-        disableInstrumentList = false;
-    }
-
-    private void DisableInteraction()
-    {
-        disableEditInstrument = true;
-        disableInstrumentList = true;
-    }
-
-    #endregion
-
-    #region Musicians
-
-    string MusicianErrorMessage = "";
-    Musician SelectedMusician;
-    MusicianEditor musicianEditor;
-    bool DisableMusicianControls = false;
-    bool DisableMusicianEditButton = true;
-
-    void EditMusicianCancelled(string message)
-    {
-        if (SelectedMusician != null)
-        {
-            SelectedMusician =
-               (from x in DataManager.Musicians
-                where x.MusicianId == SelectedMusician.MusicianId
-                select x).FirstOrDefault();
-
-
-        }
-        DisableMusicianControls = false;
-        DisableMusicianEditButton = (SelectedMusician == null);
-    }
-
-    void MusicianAdded(Musician Musician)
-    {
-        DataManager.AddMusician(Musician);
-        DisableMusicianControls = false;
-        DisableMusicianEditButton = (SelectedMusician == null);
-        musicianEditor.Hide();
-        MusicianErrorMessage = "";
-    }
-
-    void MusicianUpdated(Musician musician)
-    {
-        SelectedMusician = DataManager.UpdateMusician(musician);
-        DisableMusicianControls = false;
-        DisableMusicianEditButton = false;
-        musicianEditor.Hide();
-    }
-
-    void MusicianSelected(Microsoft.AspNetCore.Components.ChangeEventArgs args)
-    {
-        SelectMusicianById(Convert.ToInt32(args.Value));
-    }
-
-    void SelectMusicianById(int Id)
-    {
-        MusicianErrorMessage = "";
-
-
-        SelectedMusician =
-           (from x in DataManager.Musicians
-            where x.MusicianId.ToString() == Id.ToString()
-            select x).FirstOrDefault();
-
-
-        if (SelectedMusician != null)
-        {
-            DisableMusicianEditButton = false;
-        }
-        else
-            DisableMusicianEditButton = true;
-    }
-
-    async Task NewMusicianButtonClick()
-    {
-        MusicianErrorMessage = "";
-        DisableMusicianControls = true;
-        DisableMusicianEditButton = true;
-        await musicianEditor.NewMusician(DataManager.Instruments);
-    }
-
-    async Task EditMusicianButtonClick()
-    {
-        DisableMusicianControls = true;
-        DisableMusicianEditButton = true;
-        await musicianEditor.EditMusician(DataManager.Instruments,
-          SelectedMusician);
-    }
-
-    void DeleteMusicianButtonClick()
-    {
-        if (SelectedMusician != null)
-        {
-            MusicianErrorMessage =
-              DataManager.DeleteMusician(SelectedMusician, false);
-            if (DataManager.Musicians.Count == 1)
-            {
-                SelectedMusician = DataManager.Musicians.First();
-            }
-        }
-    }
-
-    async Task MusicianBioUpdated(string bio)
-    {
-        if (SelectedMusician != null)
-        {
-            await connection.InvokeAsync("SyncMusicianBio", SelectedMusician.MusicianId, bio);
-        }
-    }
-
-    private void OnReceiveSyncMusicianBio(int musicianId, string bio)
-    {
-        Musician musician = DataManager.Musicians.Where(m => m.MusicianId == musicianId).FirstOrDefault();
-
-        if (musician != null)
-        {
-            musicianEditor.UpdateMusicianBio(musicianId, bio);
-        }
-    }
-
-    #endregion
-
-    #region Bands
-
-    string BandErrorMessage = "";
-    Band SelectedBand;
-    BandEditor bandEditor;
-    bool DisableBandControls = false;
-    bool DisableBandEditButton = true;
-
-    void EditBandCancelled(string message)
-    {
-        if (SelectedBand != null)
-        {
-            SelectedBand = (from x in DataManager.Bands
-                            where x.BandId == SelectedBand.BandId
-                            select x).FirstOrDefault();
-        }
-
-        DisableBandControls = false;
-        DisableBandEditButton = (SelectedBand == null);
-        BandErrorMessage = "";
-    }
-
-    void BandAdded(Band Band)
-    {
-        DataManager.AddBand(Band);
-        DisableBandControls = false;
-        DisableBandEditButton = (SelectedBand == null);
-        bandEditor.Hide();
-    }
-
-    void BandUpdated(Band Band)
-    {
-        SelectedBand = DataManager.UpdateBand(Band);
-        DisableBandControls = false;
-        DisableBandEditButton = false;
-        bandEditor.Hide();
-    }
-
-    void BandSelected(ChangeEventArgs args)
-    {
-        SelectBandById(Convert.ToInt32(args.Value));
-    }
-
-    void SelectBandById(int Id)
-    {
-        BandErrorMessage = "";
-
-        SelectedBand = (from x in DataManager.Bands
-                        where x.BandId.ToString() == Id.ToString()
-                        select x).FirstOrDefault();
-
-        DisableBandEditButton = SelectedBand == null;
-    }
-
-    async Task NewBandButtonClick()
-    {
-        BandErrorMessage = "";
-        DisableBandControls = true;
-        DisableBandEditButton = true;
-        await bandEditor.NewBand(DataManager.Musicians);
-    }
-
-    async Task EditBandButtonClick()
-    {
-        DisableBandControls = true;
-        DisableBandEditButton = true;
-        await bandEditor.EditBand(DataManager.Musicians, SelectedBand);
-    }
-
-    void DeleteBandButtonClick()
-    {
-        var msg = DataManager.DeleteBand(SelectedBand, false);
-        if (msg == "")
-        {
-            SelectedBand = null;
-            DisableBandEditButton = true;
-        }
-        else
-        {
-            BandErrorMessage = msg;
-        }
-    }
-
-    #endregion
-
-    #region Venues
-
-    Venue SelectedVenue;
-    VenueEditor venueEditor;
-    bool DisableVenueControls = false;
-    bool DisableVenueEditButton = true;
-    string VenueErrorMessage = "";
-
-    void EditVenueCancelled(string message)
-    {
-        if (SelectedVenue != null)
-        {
-            SelectedVenue = (from x in DataManager.Venues
-                             where x.VenueId == SelectedVenue.VenueId
-                             select x).FirstOrDefault();
-        }
-        VenueErrorMessage = message;
-        DisableVenueControls = false;
-        DisableVenueEditButton = (SelectedVenue == null);
-    }
-
-    void VenueAdded(Venue venue)
-    {
-        try
-        {
-            DataManager.AddVenue(venue);
-            DisableVenueControls = false;
-            DisableVenueEditButton = (SelectedVenue == null);
-            venueEditor.Hide();
-        }
-        catch (Exception ex)
-        {
-            VenueErrorMessage = ex.Message;
-        }
-    }
-
-    void VenueUpdated(Venue venue)
-    {
-        try
-        {
-            SelectedVenue = DataManager.UpdateVenue(venue);
-            DisableVenueControls = false;
-            DisableVenueEditButton = (SelectedVenue == null);
-            venueEditor.Hide();
-        }
-        catch (Exception ex)
-        {
-            VenueErrorMessage = ex.Message;
-        }
-    }
-
-    async Task NewVenueButtonClick()
-    {
-        VenueErrorMessage = "";
-        DisableVenueControls = true;
-        DisableVenueEditButton = true;
-        await venueEditor.NewVenue();
-    }
-
-    async Task EditVenueButtonClick()
-    {
-        DisableVenueControls = true;
-        DisableVenueEditButton = true;
-        await venueEditor.EditVenue(SelectedVenue);
-    }
-
-    void DeleteVenueButtonClick()
-    {
-        string msg = DataManager.DeleteVenue(SelectedVenue, false);
-        if (msg == "")
-        {
-            SelectedVenue = null;
-            DisableVenueEditButton = true;
-        }
-        else
-        {
-            VenueErrorMessage = msg;
-        }
-    }
-
-    void VenueSelected(Microsoft.AspNetCore.Components.ChangeEventArgs args)
-    {
-        VenueErrorMessage = "";
-
-        SelectedVenue = (from x in DataManager.Venues
-                         where x.VenueId.ToString() == args.Value.ToString()
-                         select x).FirstOrDefault();
-        if (SelectedVenue != null)
-            DisableVenueEditButton = false;
-        else
-            DisableVenueEditButton = true;
-    }
-
-    #endregion
-
-    #region Bookings
-
-    string BookingErrorMessage = "";
-    Booking SelectedBooking;
-    BookingEditor BookingEditor;
-    bool DisableBookingControls = false;
-    bool DisableBookingEditButton = true;
-
-    void ContactMusicians(Booking booking)
-    {
-        // send email to each musician
-        string subject = "Potential Gig for " + booking.Band.Name;
-        string body = booking.Band.Name + " at "
-+ booking.Venue.Name + " on "
-+ booking.DateAndTime.ToLongDateString() + " at "
-+ booking.DateAndTime.ToShortTimeString()
-+ " \n\nPlease go to {YOUR WEBSITE} to confirm or decline this gig.";
-
-        var musicians = DataManager.GetMusicainsToInviteToBooking(booking);
-
-        // TODO: Send Email here to all musicians
-
-        BookingErrorMessage = "Musicians have been contacted!";
-        BookingEditor.Hide();
-        DisableBookingControls = false;
-        DisableBookingEditButton = false;
-    }
-
-    void EditBookingCancelled(string message)
-    {
-        if (SelectedBooking != null)
-        {
-            SelectedBooking = (from x in DataManager.Bookings
-                               where x.BookingId == SelectedBooking.BookingId
-                               select x).FirstOrDefault();
-        }
-
-        DisableBookingControls = false;
-        DisableBookingEditButton = false;
-        BandErrorMessage = "";
-    }
-
-    void BookingAdded(Booking Booking)
-    {
-        DataManager.AddBooking(Booking);
-        DisableBookingControls = false;
-        DisableBookingEditButton = (SelectedBooking == null);
-        BookingEditor.Hide();
-    }
-
-    void BookingUpdated(Booking Booking)
-    {
-        SelectedBooking = DataManager.UpdateBooking(Booking);
-        DisableBookingControls = false;
-        DisableBookingEditButton = false;
-        BookingEditor.Hide();
-    }
-
-    void BookingSelected(Microsoft.AspNetCore.Components.ChangeEventArgs args)
-    {
-        SelectBookingById(Convert.ToInt32(args.Value));
-    }
-
-    void SelectBookingById(int Id)
-    {
-        BookingErrorMessage = "";
-
-        SelectedBooking = (from x in DataManager.Bookings
-                           where x.BookingId.ToString() == Id.ToString()
-                           select x).FirstOrDefault();
-        if (SelectedBooking != null)
-        {
-            DisableBookingEditButton = false;
-        }
-        else
-            DisableBookingEditButton = true;
-    }
-
-    async Task NewBookingButtonClick()
-    {
-        var Bands = DataManager.Bands;
-        if (Bands.Count == 0)
-        {
-            BookingErrorMessage = "Please add a band first.";
-            return;
-        }
-
-        var Venues = DataManager.Venues;
-        if (Venues.Count == 0)
-        {
-            BookingErrorMessage = "Please add a venue first.";
-            return;
-        }
-
-        BookingErrorMessage = "";
-        DisableBookingControls = true;
-        DisableBookingEditButton = true;
-        await BookingEditor.NewBooking(Bands, Venues);
-    }
-
-    async Task EditBookingButtonClick()
-    {
-        DisableBookingControls = true;
-        DisableBookingEditButton = true;
-        await BookingEditor.EditBooking(DataManager.Bands,
-            DataManager.Venues, SelectedBooking);
-    }
-
-    void BandWasBooked(Booking booking)
-    {
-        // send email to each musician
-        string subject = "New Booking for " + booking.Band.Name;
-        string body = booking.Band.Name + " has been booked at "
-+ booking.Venue.Name + " on "
-+ booking.DateAndTime.ToLongDateString() + " at "
-+ booking.DateAndTime.ToShortTimeString()
-+ " with the following musicians:\n\n";
-        foreach (var bmi in booking.BookingMusicianInstrument)
-        {
-            body += bmi.Musician.Name + " ("
-                + bmi.Instrument.Name + ")\n";
-        }
-
-        // TODO: Send Email Here to all BookingMusicians
-
-        BookingErrorMessage = "Emails have been sent!";
-        BookingEditor.Hide();
-
-        // Update the booking now that the Booked bool has been set
-        DataManager.UpdateBooking(booking);
-    }
-
-    void DeleteBookingButtonClick()
-    {
-        var msg = DataManager.DeleteBooking(SelectedBooking, false);
-        BookingErrorMessage = "";
-        if (msg == "")
-        {
-            SelectedBooking = null;
-            DisableBookingEditButton = true;
-        }
-        else
-        {
-            BookingErrorMessage = msg;
-        }
-    }
-
-    #endregion
 
 }
