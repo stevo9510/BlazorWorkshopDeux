@@ -21,10 +21,10 @@ namespace BandBooker.Pages
         protected bool isMusician = false;
         
         [Inject]
-        public IConfiguration Configuration { get; set; }
+        private IConfiguration Configuration { get; set; }
 
         [Inject]
-        public AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+        private AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
         protected async override Task OnInitializedAsync()
         {
@@ -314,12 +314,12 @@ namespace BandBooker.Pages
             SelectBandById(Convert.ToInt32(args.Value));
         }
 
-        void SelectBandById(int Id)
+        void SelectBandById(int id)
         {
             bandErrorMessage = "";
 
             selectedBand = (from x in DataManager.Bands
-                            where x.BandId.ToString() == Id.ToString()
+                            where x.BandId.ToString() == id.ToString()
                             select x).FirstOrDefault();
 
             disableBandEditButton = selectedBand == null;
