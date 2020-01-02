@@ -1,7 +1,7 @@
-﻿@using BandBookerData.Models;
-@using Microsoft.AspNetCore.Components;
+﻿@using Microsoft.AspNetCore.Components;
+@inherits BookingResponseCode;
 
-@if (ShowYesResponsePanel)
+@if (showYesResponsePanel)
 {
     <div style="background-color:lightgray;">
         <div style="padding:1vw;">
@@ -17,73 +17,16 @@
         </div>
     </div>
 }
-else if (ShowNoResponsePanel)
+else if (showNoResponsePanel)
 {
     <div style="background-color:lightgray;">
         <div style="padding:1vw;">
             Reason for declining:
-            <input @bind="@ResponseReason" type="text" style="width:100%;" />
+            <input @bind="@responseReason" type="text" style="width:100%;" />
             <br />
             <button @onclick="ReasonGivenForDecliningGig">Confirm</button>
             &nbsp;
             <button @onclick="CancelReasonGivenForDecliningGig">Cancel</button>
         </div>
     </div>
-}
-
-@code {
-
-    [Parameter]
-    public List<Instrument> MusiciansInstruments { get; set; }
-
-    [Parameter]
-    public EventCallback<Instrument> MusicianAcceptedBooking { get; set; }
-    [Parameter]
-    public EventCallback<string> MusicianRejectedBooking { get; set; }
-    [Parameter]
-    public EventCallback<string> ResponseCancelled { get; set; }
-
-    string ResponseReason = "";
-    bool ShowYesResponsePanel = false;
-    bool ShowNoResponsePanel = false;
-
-    public void Hide()
-    {
-        ShowYesResponsePanel = false;
-        ShowNoResponsePanel = false;
-    }
-
-    public void ShowYes()
-    {
-        ShowYesResponsePanel = true;
-        ShowNoResponsePanel = false;
-    }
-
-    public void ShowNo()
-    {
-        ShowYesResponsePanel = false;
-        ShowNoResponsePanel = true;
-
-    }
-
-    async Task GigInstrumentSelected(ChangeEventArgs args)
-    {
-        var instrument = (from x in MusiciansInstruments
-                          where x.InstrumentId == Convert.ToInt32(args.Value)
-                          select x).FirstOrDefault();
-        await MusicianAcceptedBooking.InvokeAsync(instrument);
-        Hide();
-    }
-
-    async Task ReasonGivenForDecliningGig()
-    {
-        await MusicianRejectedBooking.InvokeAsync(ResponseReason);
-        Hide();
-    }
-
-    async Task CancelReasonGivenForDecliningGig()
-    {
-        await ResponseCancelled.InvokeAsync("");
-        Hide();
-    }
 }
